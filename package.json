@@ -1,0 +1,17 @@
+{
+  "name": "leaks-when-ast-transformation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Luciano Garcia-Banuelos",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.4",
+    "express": "^4.16.2",
+    "pg-query-parser": "^0.2.1",
+    "rimraf": "2.6.2"
+  }
+}

@@ -1,0 +1,5 @@
+pleak-leaks-when-analysis/src/_build
+pleak-leaks-when-analysis/src/*dot
+pleak-leaks-when-analysis/src/*report
+node_modules
+
