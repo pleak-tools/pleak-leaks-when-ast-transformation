@@ -25,12 +25,13 @@ app.post('/upload', (req, res) => {
     }
     var model_name = !req.query.model ? "tmp" : req.query.model;
 
-    rimraf.sync("./data/" + model_name);
+    rimraf.sync("/data/" + model_name);
+    fs.mkdirSync("/data/" + model_name);
     let code = rewriter.analyze(req.body, targets);
     console.log('-----------------------------------');
     
     fs.writeFileSync('./pleak-leaks-when-analysis/src/RAInput.ml', code);
-    exec(`/usr/pleak/scripts/script.sh ./data/${model_name}`, (err, stdout, stderr) => {
+    exec(`/usr/pleak/scripts/script.sh /data/${model_name}`, (err, stdout, stderr) => {
         if (err) {
             console.log(`stderr: ${stderr}`);
 

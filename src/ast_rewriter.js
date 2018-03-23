@@ -289,7 +289,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
 
                 stack.push(`    RAAddSortColumn(\n${inter},\n    "${partitions[0].ResTarget.name}", [${partition_fields.join("; ")}], ${sortingColumns.join(", ")})`);
             } else
-                stack.push(`${inter},`);
+                stack.push(`${inter}`);
         } else if (node.funcname) {
             let local_stack = [];
             for (var child in node)
@@ -367,8 +367,9 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                     filter(elem => elem.FunctionParameter.mode == 116).
                     map(elem => `"${elem.FunctionParameter.name}"`);
                 console.log("++---->", parameters);
-
-                stack.push(`RALetExp ("${functionName}",\n${dumpFieldRenaming3(projected_fields1, parameters)}${stack1.pop()}\n  ${parameters.map(a => ")").join("")}`);
+                console.log("stack", stack1);
+                // stack.push(`RALetExp ("${functionName}",\n${dumpFieldRenaming3(projected_fields1, parameters)}${stack1.pop()}\n  ${parameters.map(a => ")").join("")}`);
+                stack.push(`RALetExp ("${functionName}",\n${stack1.pop()}`);
             } else {
                 var stack1 = [];
                 var fields1 = {};
@@ -451,14 +452,16 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             // if (context !== 'function-def') {
             //     stack.push(`  RAProject(\n${stack.pop()}\n    [${projection.join("; ")}]\n  )`);
             // } else {
+            if (context !== 'function-def') {
                 var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
                 projection_part = partitions.reduceRight((acc, elem) => `    RAAddSortColumn (\n${acc},\n    ${elem})`, projection_part);
-                stack.push(`${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`);
+                stack.push(`\n${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`);
                 
                 if (node.SelectStmt.intoClause) {
                     var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
                     stack.push(`RALetExp ("${relName}",${stack.pop()}`);
                 }
+            }
             // }
 
             // if (node.SelectStmt.intoClause) {
