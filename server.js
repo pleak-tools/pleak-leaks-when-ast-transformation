@@ -14,7 +14,7 @@ var app = express();
 app.use(bodyParser.text());
 app.use(cors());
 
-app.get('/', (req, res) => res.send('hello world'));
+app.use('/leaks-when/data', express.static('/data'));
 app.post('/upload', (req, res) => {
     console.log('-----------------------------------');
     console.log(req.body);
@@ -38,7 +38,8 @@ app.post('/upload', (req, res) => {
             res.send("Oops ... something wrong").end();
             return;
         }
-        res.send(code).end();
+        let files = fs.readdirSync(`/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
+        res.send({files: files}).end();
     });
 });
 app.listen(3000, () => console.log('Listening on port 3000'));
