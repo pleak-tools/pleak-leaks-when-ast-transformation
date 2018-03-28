@@ -8,4 +8,4 @@ RUN sudo chown opam:opam -R .
 RUN sudo mkdir /data
 RUN sudo chown opam:opam /data
 RUN npm install
-CMD ./scripts/build.sh ; node ./server.js
+CMD ./scripts/build.sh ; nohup node ./server.js

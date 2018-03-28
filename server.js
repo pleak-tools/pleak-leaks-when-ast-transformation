@@ -11,31 +11,30 @@ const exec = require('child_process').exec;
 console.log(rewriter);
 
 var app = express();
-app.use(bodyParser.text());
+app.use(bodyParser.json());
 app.use(cors());
 
 app.use('/leaks-when/data', express.static('/data'));
 app.post('/upload', (req, res) => {
     console.log('-----------------------------------');
-    console.log(req.body);
+    console.log(req);
     var targets = [];
-    if (req.query.targets) {
-        console.log(req.query.targets);
-        targets = req.query.targets.split(',');
+    if (req.body.targets) {
+        console.log(req.body.targets);
+        targets = req.body.targets.split(',');
     }
-    var model_name = !req.query.model ? "tmp" : req.query.model;
+    var model_name = !req.body.model ? "tmp" : req.body.model;
 
     rimraf.sync("/data/" + model_name);
     fs.mkdirSync("/data/" + model_name);
-    let code = rewriter.analyze(req.body, targets);
+    let code = rewriter.analyze(req.body.sql_script, targets);
     console.log('-----------------------------------');
     
     fs.writeFileSync('./pleak-leaks-when-analysis/src/RAInput.ml', code);
     exec(`/usr/pleak/scripts/script.sh /data/${model_name}`, (err, stdout, stderr) => {
         if (err) {
             console.log(`stderr: ${stderr}`);
-
-            res.send("Oops ... something wrong").end();
+            res.send(400, "Oops ... something wrong").end();
             return;
         }
         let files = fs.readdirSync(`/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
