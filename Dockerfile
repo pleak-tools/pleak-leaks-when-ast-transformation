@@ -8,4 +8,5 @@ RUN sudo chown opam:opam -R .
 RUN sudo mkdir /data
 RUN sudo chown opam:opam /data
 RUN npm install
+RUN sudo chmod 777 /usr/pleak/scripts/*.sh
 CMD ./scripts/build.sh ; nohup node ./server.js
