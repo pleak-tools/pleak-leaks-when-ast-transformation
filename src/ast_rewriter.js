@@ -165,7 +165,9 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                         alias = joinExpr.rarg.RangeFunction.alias.Alias.aliasname;
                     mapping[alias] = `RATable "${relname}"`;
 
+                    // var local_fields = {};
                     traverse(node.targetList, [],  fdefs, context, fields, aliases, projected_fields);
+                    // console.log("^^^^LOCAL FIELDS", local_fields);
 
                     stack.push(`      RACartesian[\n${dumpFieldRenaming(fields, mapping).join(";\n")}\n      ]`);
                 } else {
@@ -460,6 +462,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 if (node.SelectStmt.intoClause) {
                     var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
                     stack.push(`RALetExp ("${relName}",${stack.pop()}`);
+                    for (var member in fields) delete fields[member];
                 }
             }
             // }
