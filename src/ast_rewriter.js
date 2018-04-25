@@ -27,7 +27,12 @@ let PgQuery = require('pg-query-parser');
       return `RLSet.from_list [${list}]`;
     } else {
       let key = tableElts.find(elem => elem.ColumnDef && elem.ColumnDef.constraints && elem.ColumnDef.constraints.find( c => c.Constraint && c.Constraint.contype == 4) );
-      return `RLSet.singleton "${key.ColumnDef.colname}"`;
+      let extra = tableElts.find(elem => elem.ColumnDef && elem.ColumnDef.constraints && elem.ColumnDef.constraints.find( c => c.Constraint && c.Constraint.contype == 5) );
+    
+      if (!!extra)
+        return `RLSet.singleton "${key.ColumnDef.colname}"; RLSet.singleton "${extra.ColumnDef.colname}"`
+      else
+        return `RLSet.singleton "${key.ColumnDef.colname}"`;
     }
   };
  
@@ -415,20 +420,26 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                     return list.join("");
                 } else if (value.FuncCall) {
                     if (value.FuncCall.over) {
-                        console.log("PARTITION OVER:");
+                        let local_stack = [];
+                        let local_fields = {};
+                        traverse(node.SelectStmt.sortClause, local_stack, fdefs, "function", local_fields, aliases, projected_fields);
+                        let sortingColumns = local_stack.map(elem => '"' + elem.substring(elem.indexOf(".") + 1));
+        
+                        console.log("PARTITION OVER:", sortingColumns);
                         var part_fields = value.FuncCall.over.WindowDef.partitionClause.map(elem => {
                             let local_fields = {};
                             traverse(elem, [], [], "projection", local_fields, {}, []);
-                            // console.log("Elem", JSON.stringify(elem));
-                            // console.log("fields", JSON.stringify(local_fields));
+                            console.log("Elem", JSON.stringify(elem));
+                            console.log("fields", JSON.stringify(local_fields));
                             var result = "";
                             for (const table_name in local_fields)
                                 result += `"${local_fields[table_name]}"`;
                             return result;
                         });
 
-                        var partition_expression = `"${elem.ResTarget.name}", [${part_fields.join("; ")}], OOOPS: "${elem.ResTarget.name}"`;
-                        console.log("HERE", partition_expression);
+                        var partition_expression = `"${elem.ResTarget.name}", [${part_fields.join("; ")}], ${sortingColumns.filter(v => part_fields.indexOf(v) < 0)}`;
+                        console.log("\n\nHERE", partition_expression);
+                        console.log("HERE", part_fields);
                         partitions.push(partition_expression);
                     }
                     proj_aliases.push(`"${elem.ResTarget.name}"`);
@@ -455,9 +466,11 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             //     stack.push(`  RAProject(\n${stack.pop()}\n    [${projection.join("; ")}]\n  )`);
             // } else {
             if (context !== 'function-def') {
+                projection = projection.filter(v => v !== '"row_id"');
                 var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
-                projection_part = partitions.reduceRight((acc, elem) => `    RAAddSortColumn (\n${acc},\n    ${elem})`, projection_part);
-                stack.push(`\n${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`);
+                var renaming = `${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`;
+                projection_part = partitions.reduceRight((acc, elem) => `\n  RAAddSortColumn (\n${acc},\n    ${elem})`, renaming);
+                stack.push(projection_part);
                 
                 if (node.SelectStmt.intoClause) {
                     var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
