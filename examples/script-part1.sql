@@ -6,7 +6,7 @@ CREATE TABLE parameters (
 
 CREATE TABLE ship (
   ship_id bigserial PRIMARY KEY,
-  name text NOT NULL,
+  name text UNIQUE NOT NULL,
   cargo bigint,
   latitude DOUBLE PRECISION,
   longitude DOUBLE PRECISION,

@@ -6,7 +6,7 @@ CREATE TABLE parameters (
 
 CREATE TABLE ship (
   ship_id bigserial PRIMARY KEY,
-  name text NOT NULL,
+  name text unique NOT NULL,
   cargo bigint,
   latitude DOUBLE PRECISION,
   longitude DOUBLE PRECISION,
@@ -80,10 +80,10 @@ FROM parameters as p cross join lateral compute_reachable_ports(p.deadline, p.sh
 create or replace function compute_feasible_ports(shipname TEXT)
   returns TABLE (port_id BIGINT) as
 $$
-  select port.port_id
+  select port.port_id as port_id
   from reachable_ports, port, ship
   where reachable_ports.port_id = port.port_id
-    and port.available = true
+    and port.available
     and port.harbordepth >= ship.draft 
     and port.offloadcapacity >= ship.cargo
     and ship.name = shipname;
