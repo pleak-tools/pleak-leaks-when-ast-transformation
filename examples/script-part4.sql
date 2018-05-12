@@ -116,3 +116,25 @@ FULL JOIN slot1 AS slot2 ON
   slot1.row_id + 1 = slot2.row_id
 WHERE COALESCE(slot1.slotend, 0) < COALESCE(slot2.slotstart, 30)
 ORDER BY port_id, berth_id, gap;
+
+SELECT port.port_id as port_id, 
+  availslot.berth_id as berth_id, 
+  availslot.slot_id as slot_id,
+  GREATEST(rport.arrival, availslot.slotstart) AS offloadstart
+INTO slot_assignment
+FROM reachable_ports AS rport, feasible_ports AS fport, port, 
+available_slots AS availslot, berth, ship
+WHERE port.port_id = fport.port_id
+AND port.port_id = rport.port_id
+AND port.port_Id = berth.port_id 
+AND availslot.port_id = berth.port_id
+AND availslot.berth_id = berth.berth_id
+AND ship.name = shipname 
+-- ship fits in berth
+AND berth.berthlength >= ship.length
+-- begin offload by deadline
+AND rport.arrival <= deadline AND availslot.slotstart <= deadline
+-- arrival AND available slot start + offloadtime before end of slot window
+AND rport.arrival + port.offloadtime <= availslot.slotend
+AND availslot.slotstart + port.offloadtime <= availslot.slotend
+ORDER BY offloadstart, port_id, berth_id;

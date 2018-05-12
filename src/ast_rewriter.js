@@ -67,7 +67,7 @@ let dumpFieldRenaming = (fields, aliases) => {
     for (const table_name in fields) {
         // let tmp = fields[table_name].map( field => `("${field}", "${table_name}.${field}")`).join("; ");
         // list.push(`renameTableCols [${tmp}] "${table_name}"`);
-        console.log("WORKING WITH", table_name);
+        console.log("WORKING WITHx", table_name);
         console.log(fields[table_name]);
         let tmp = fields[table_name].map( field => `          RARenameCol("${field}", "${table_name}.${field}",`).join("\n");
         list.push(`${tmp}\n            ${aliases[table_name]}\n          ${fields[table_name].map(a => ")").join("")}`);
@@ -206,9 +206,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
         } else if (node.MinMaxExpr) {
             let local_stack = [];
             traverse(node.MinMaxExpr, local_stack, fdefs, "CoalesceExpr", fields, aliases, projected_fields);
-            // if (node.MinMaxExpr.op == 0) 
-            // console.log("MinMaxExpr", `RAXoper (OPITE, [RAXoper (OPLessThan, [${local_stack[0]}; ${local_stack[1]}]); ${local_stack[0]}; ${local_stack[1]}]))`);
-            stack.push(`RAXoper (OPITE, [RAXoper (OPLessThan, [${local_stack[0]}; ${local_stack[1]}]); ${local_stack[0]}; ${local_stack[1]}]))`);
+            stack.push(`RAXoper (OPITE, [RAXoper (OPLessThan, [${local_stack[0]}; ${local_stack[1]}]); ${local_stack[0]}; ${local_stack[1]}])`);
         } else if (node.CoalesceExpr) {
             let local_stack = [];
             traverse(node.CoalesceExpr, local_stack, fdefs, "CoalesceExpr", fields, aliases, projected_fields);
