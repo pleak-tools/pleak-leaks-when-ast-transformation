@@ -102,40 +102,6 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
         if (node.CreateStmt || node.withClause) return;
         if (node.SelectStmt && node.SelectStmt.withClause) {
             traverse(node.SelectStmt.withClause, stack, fdefs, context, fields, aliases, projected_fields);
-            console.log("withClause", stack);
-        //     var xnode = node.SelectStmt.withClause.WithClause.ctes[0].CommonTableExpr;
-
-        //     var inter = xnode.ctequery.SelectStmt.targetList.filter(elem => !!!(elem.ResTarget.val.FuncCall && elem.ResTarget.val.FuncCall.over)
-        // ).reduceRight((acc, elem) => {
-        //     if (elem.ResTarget.val.FuncCall) {
-        //         let local_stack = [];
-        //         traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
-        //         return `    RANewColumn (\n${acc},\n     "${elem.ResTarget.name}", ${local_stack.pop()})`;
-        //     } else if (elem.ResTarget.val.CoalesceExpr || elem.ResTarget.val.MinMaxExpr) {
-        //         let local_stack = [];
-        //         traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
-        //         return `    RANewColumn (\n${acc},\n     "${elem.ResTarget.name}", ${local_stack.pop()})`;
-        //     } else {
-        //         return acc;
-        //     }
-        // }, stack.pop());
-
-        // var partitions = xnode.ctequery.SelectStmt.targetList.filter(elem => (elem.ResTarget.val.FuncCall && elem.ResTarget.val.FuncCall.over));
-        // if (xnode.ctequery.SelectStmt.sortClause && partitions.length > 0) {
-        //     let local_stack = [];
-        //     let local_fields = {};
-        //     traverse(xnode.ctequery.SelectStmt.sortClause, local_stack, fdefs, "function", local_fields, aliases, projected_fields);
-        //     let sortingColumns = local_stack.map(elem => '"' + elem.substring(elem.indexOf(".") + 1));
-
-        //     let partition_fields = partitions[0].ResTarget.val.FuncCall.over.WindowDef.partitionClause.map(elem => 
-        //         `"${elem.ColumnRef.fields.map(f => f.String.str).join('.')}"`);
-
-        //     sortingColumns = sortingColumns.filter(elem => partition_fields.indexOf(elem) < 0);
-
-        //     stack.push(`    RAAddSortColumn(\n${inter},\n    "${partitions[0].ResTarget.name}", [${partition_fields.join("; ")}], ${sortingColumns.join(", ")})`);
-        // } else
-        //     stack.push(`${inter},`);
-
         }
 
         if (node.fromClause) {
@@ -193,7 +159,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
 
                     var local_stack = [];
                     traverse(joinExpr.quals, local_stack,  fdefs, context, fields, aliases, projected_fields);
-                    stack.push(`        fullouterjoin\n${dumpFieldRenaming(fields, mapping).map(elem => elem + "\n").join("")}          ${local_stack.pop()}`);
+                    stack.push(`        (fullouterjoin\n${dumpFieldRenaming(fields, mapping).map(elem => "          (\n" + elem + ")\n").join("")}          (${local_stack.pop()}))`);
                 }
             } else {
                 let mapping = node.fromClause.reduce( (acc, clause) => {
@@ -235,7 +201,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
 
         if (node.str) {
             stack.push(node.str);
-        } else if (node.ival) {
+        } else if (node.ival || node.ival == 0) {
             stack.push(`RAXoper (OPIntConst ${node.ival}, [])`);
         } else if (node.MinMaxExpr) {
             let local_stack = [];
@@ -282,20 +248,20 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 }
             }, inter);
 
-            var partitions = node.targetList.filter(elem => (elem.ResTarget.val.FuncCall && elem.ResTarget.val.FuncCall.over));
-            if (node.sortClause && partitions.length > 0) {
-                let local_stack = [];
-                let local_fields = {};
-                traverse(node.sortClause, local_stack, fdefs, "function", local_fields, aliases, projected_fields);
-                let sortingColumns = local_stack.map(elem => '"' + elem.substring(elem.indexOf(".") + 1));
+            // var partitions = node.targetList.filter(elem => (elem.ResTarget.val.FuncCall && elem.ResTarget.val.FuncCall.over));
+            // if (node.sortClause && partitions.length > 0) {
+            //     let local_stack = [];
+            //     let local_fields = {};
+            //     traverse(node.sortClause, local_stack, fdefs, "function", local_fields, aliases, projected_fields);
+            //     let sortingColumns = local_stack.map(elem => '"' + elem.substring(elem.indexOf(".") + 1));
 
-                let partition_fields = partitions[0].ResTarget.val.FuncCall.over.WindowDef.partitionClause.map(elem => 
-                    `"${elem.ColumnRef.fields.map(f => f.String.str).join('.')}"`);
+            //     let partition_fields = partitions[0].ResTarget.val.FuncCall.over.WindowDef.partitionClause.map(elem => 
+            //         `"${elem.ColumnRef.fields.map(f => f.String.str).join('.')}"`);
 
-                sortingColumns = sortingColumns.filter(elem => partition_fields.indexOf(elem) < 0);
+            //     sortingColumns = sortingColumns.filter(elem => partition_fields.indexOf(elem) < 0);
 
-                stack.push(`    RAAddSortColumn(\n${inter},\n    "${partitions[0].ResTarget.name}", [${partition_fields.join("; ")}], ${sortingColumns.join(", ")})`);
-            } else
+            //     stack.push(`    RAAddSortColumn(\n${inter},\n    "${partitions[0].ResTarget.name}", [${partition_fields.join("; ")}], ${sortingColumns.join(", ")})`);
+            // } else
                 stack.push(`${inter}`);
         } else if (node.funcname) {
             let local_stack = [];
@@ -406,6 +372,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
         if (node.SelectStmt) {
             var proj_aliases = [];
             var partitions = [];
+            var partition_ids = [];
             var projection =
             node.SelectStmt.targetList.filter(elem => elem.ResTarget.val.ColumnRef || elem.ResTarget.val.FuncCall || elem.ResTarget.val.CoalesceExpr || elem.ResTarget.val.MinMaxExpr).map(elem => {
                 let value = elem.ResTarget.val;
@@ -441,32 +408,24 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                         console.log("\n\nHERE", partition_expression);
                         console.log("HERE", part_fields);
                         partitions.push(partition_expression);
-                    }
-                    proj_aliases.push(`"${elem.ResTarget.name}"`);
+                        partition_ids.push(`"${elem.ResTarget.name}"`);
+                    } else
+                        proj_aliases.push(`"${elem.ResTarget.name}"`);
 
                     return `"${elem.ResTarget.name}"`;
                 } else if (value.CoalesceExpr) {
                     proj_aliases.push(`"${elem.ResTarget.name}"`);
                     return `"${elem.ResTarget.name}"`;                    
                 } else if (value.MinMaxExpr) {
-                    console.log("YYYYYYYYYEEEEEEEESSSSSSS");
                     proj_aliases.push(`"${elem.ResTarget.name}"`);
                     return `"${elem.ResTarget.name}"`;
                 }
             });
 
-
             projected_fields.push(...projection);
-            console.log("IN the stack", stack);
-            console.log("partitions", partitions);
 
-
-
-            // if (context !== 'function-def') {
-            //     stack.push(`  RAProject(\n${stack.pop()}\n    [${projection.join("; ")}]\n  )`);
-            // } else {
             if (context !== 'function-def') {
-                projection = projection.filter(v => v !== '"row_id"');
+                projection = projection.filter(v => !partition_ids.includes(v));
                 var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
                 var renaming = `${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`;
                 projection_part = partitions.reduceRight((acc, elem) => `\n  RAAddSortColumn (\n${acc},\n    ${elem})`, renaming);
@@ -478,25 +437,6 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                     for (var member in fields) delete fields[member];
                 }
             }
-            // }
-
-            // if (node.SelectStmt.intoClause) {
-            //     var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
-            //     var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
-
-            //     projection_part = partitions.reduceRight((acc, elem) => `    RAAddSortColumn (\n${acc},\n    ${elem})`, projection_part);
-
-            //     stack.push(`RALetExp ("${relName}",\n${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`);
-            // } else if (partitions.length > 0) {
-            //     // var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
-            //     var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
-
-            //     projection_part = partitions.reduceRight((acc, elem) => `    RAAddSortColumn (\n${acc},\n    ${elem})`, projection_part);
-
-            //     stack.push(`${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`);
-            // } else if (context !== 'function-def') {
-            //     stack.push(`  RAProject(\n${stack.pop()}\n    [${projection.join("; ")}]\n  )`);
-            // }
         }
     }
 };
