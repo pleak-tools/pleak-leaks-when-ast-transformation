@@ -3,6 +3,7 @@ package ee.ut.eventstr.confcheck.test;
 import hub.top.petrinet.PetriNet;
 import hub.top.petrinet.Place;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson; 
 import com.google.gson.GsonBuilder;
 import com.google.gwt.dev.util.collect.HashMap;
@@ -30,7 +31,7 @@ public class ExpandedPomsetPrefixTest2 {
     String json = "";
 
     try {
-			File file = new File("models/elementary/petri.json");
+			File file = new File("10_ShipAllocation.json");
 			FileReader fileReader = new FileReader(file);
 			StringBuffer stringBuffer = new StringBuffer();
 			int numCharsRead;
@@ -49,24 +50,22 @@ public class ExpandedPomsetPrefixTest2 {
 
     PetriNode[] petri = gson.fromJson(json, PetriNode[].class);
     PetriNet net = PetriConverter.Convert(petri);
-
-		// BPMNProcess<Element> model = BPMN2Reader.parse(new File("models/elementary/cycle.bpmn"));
-		// Petrifier<Element> petrifier = new Petrifier<Element>(model);
-		// PetriNet net = petrifier.petrify(model.getSources().iterator().next(), model.getSinks().iterator().next());
-		// System.out.println(model.getLabels());
-//		
-//		Set<String> labels = new HashSet<String>();
-//		for (Integer node: model.getVisibleNodes())
-//			labels.add(model.getName(node));
 		
 		IOUtils.toFile("net.dot", net.toDot());
 
+    // Unfolding petri net
 		Unfolder_PetriNet unfolder = new Unfolder_PetriNet(net, MODE.ONEUNFOLDING);
 		unfolder.computeUnfolding();
     PetriNet bp = unfolder.getUnfoldingAsPetriNet();
+
+    IOUtils.toFile("bp.dot", bp.toDot());
+
+    Set<Place> terminals = bp.getPlaces().stream().filter(x -> 
+    {
+      return x.getOutgoing().size() == 0;
+    }).collect(Collectors.toSet());
     
-    Set<Place> terminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0).collect(Collectors.toSet());
-    
+    // Removing residual parts
     terminals.forEach(x -> {
       String name = x.getName();
       Set<Place> sameNameWithOutgoing = bp.getPlaces().stream().filter(y -> y.getName() == name && y.id != x.id && y.getOutgoing().size() > 0).collect(Collectors.toSet());
@@ -75,32 +74,35 @@ public class ExpandedPomsetPrefixTest2 {
       }
     });
 
-    Set<Place> prunedTerminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0).collect(Collectors.toSet());
+    IOUtils.toFile("bp2.dot", bp.toDot());
+
+    Set<Place> prunedTerminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0 && !x.getName().contains("DataObjectReference")).collect(Collectors.toSet());
     ArrayList<ArrayList<String>> runs = new ArrayList<ArrayList<String>>();
     
+    // List<Place> list0 = bp.getPlaces().stream().collect(Collectors.toList());
+    // Place[] pp = list0.toArray(new Place[list0.size()]);
+
+    // Building runs
     prunedTerminals.forEach(x -> {
-      Map<String, Integer> e = new HashMap<String, Integer>();
-      bp.getTransitions().stream().forEach(y -> e.put(y.getUniqueIdentifier(), 0));
-      bp.getPlaces().stream().forEach(y -> e.put(y.getUniqueIdentifier(), 0));
+      Map<String, Boolean> e = new HashMap<String, Boolean>();
+      bp.getTransitions().stream().forEach(y -> {
+        e.put(y.getUniqueIdentifier(), false);
+      });
+      bp.getPlaces().stream().forEach(y -> {
+        e.put(y.getUniqueIdentifier(), false);
+      });
 
       ArrayList<String> run = new ArrayList<String>();
       NetTraverse.BuildRun(bp, x, run, e);
       runs.add(run);
     });
-
     
     List<String[]> list = runs.stream().map(x -> {
-      String[] news = x.toArray(new String[x.size()]);
-      return news;
+      String[] subs = Lists.reverse(x).toArray(new String[x.size()]);
+      return subs;
     }).collect(Collectors.toList());
-    String[][] qwe = list.toArray(new String[list.size()][]);
-
     
-		IOUtils.toFile("bp.dot", bp.toDot());
-//		Unfolding2PES pes = new Unfolding2PES(unfolder.getSys(), unfolder.getBP(), labels);
-//		NewUnfoldingPESSemantics<Integer> pessem = new NewUnfoldingPESSemantics<Integer>(pes.getPES(), pes);
-//		IOUtils.toFile("bpmnpes.dot", pessem.toDot());
-//		
-//		IOUtils.toFile("expprefix.dot", new ExpandedPomsetPrefix<Integer>(pessem).toDot());
+    String[][] result = list.toArray(new String[list.size()][]);
+    IOUtils.toFile("testus.json", gson.toJson(result));
 	}
 }

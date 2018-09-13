@@ -55,7 +55,10 @@ public class Unfolder {
 		unfolder.computeUnfolding();
     PetriNet bp = unfolder.getUnfoldingAsPetriNet();
     
-    Set<Place> terminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0).collect(Collectors.toSet());
+    Set<Place> terminals = bp.getPlaces().stream().filter(x -> 
+    {
+      return x.getOutgoing().size() == 0;
+    }).collect(Collectors.toSet());
     
     // Removing residual parts
     terminals.forEach(x -> {
@@ -66,14 +69,18 @@ public class Unfolder {
       }
     });
 
-    Set<Place> prunedTerminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0).collect(Collectors.toSet());
+    Set<Place> prunedTerminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0 && !x.getName().contains("DataObjectReference")).collect(Collectors.toSet());
     ArrayList<ArrayList<String>> runs = new ArrayList<ArrayList<String>>();
     
     // Building runs
     prunedTerminals.forEach(x -> {
-      Map<String, Integer> e = new HashMap<String, Integer>();
-      bp.getTransitions().stream().forEach(y -> e.put(y.getUniqueIdentifier(), 0));
-      bp.getPlaces().stream().forEach(y -> e.put(y.getUniqueIdentifier(), 0));
+      Map<String, Boolean> e = new HashMap<String, Boolean>();
+      bp.getTransitions().stream().forEach(y -> {
+        e.put(y.getUniqueIdentifier(), false);
+      });
+      bp.getPlaces().stream().forEach(y -> {
+        e.put(y.getUniqueIdentifier(), false);
+      });
 
       ArrayList<String> run = new ArrayList<String>();
       NetTraverse.BuildRun(bp, x, run, e);

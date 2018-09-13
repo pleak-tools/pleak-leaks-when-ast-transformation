@@ -27,25 +27,35 @@ public class NetTraverse {
     }
   }
 
-  public static void BuildRun(PetriNet bp, Node current, ArrayList<String> run, Map<String, Integer> e) {
+  public static void BuildRun(PetriNet bp, Node current, ArrayList<String> run, Map<String, Boolean> e) {
     Set<Node> incoming = current.getIncoming().stream().map(y -> y.getSource()).collect(Collectors.toSet());
-    Integer outgoing = current.getOutgoing().size();
+    Integer outgoingSize = current.getOutgoing().size();
     String name = current.getName();
     String id = current.getUniqueIdentifier();
+    e.put(id, true);
 
-    if(outgoing > 1 && current instanceof Transition){
-      if(e.get(id) == outgoing - 1){
-        e.put(id, outgoing);
+    if(outgoingSize > 1 && current instanceof Transition){
+      // We don't have to wait for temporary data objects branches,
+      // only for potential parallel branches
+      Set<Node> visitedOutgoing = current.getOutgoing().stream().map(y -> y.getTarget())
+      .filter(y -> {
+        return e.get(y.getUniqueIdentifier()) || y.getName().contains("DataObjectReference");
+      }).collect(Collectors.toSet());
+
+      if(visitedOutgoing.size() == outgoingSize) {
         run.add(name);
-        incoming.stream().forEach(x -> NetTraverse.BuildRun(bp, x, run, e));
-      }
-      else {
-        e.put(id, e.get(id) + 1);
+        incoming.stream().forEach(x -> {
+          if(!x.getUniqueIdentifier().contains("DataObjectReference") || x.getIncoming().size() == 0)
+            NetTraverse.BuildRun(bp, x, run, e);
+        });
       }
     }
     else{
       run.add(name);
-      incoming.stream().forEach(x -> NetTraverse.BuildRun(bp, x, run, e));
+      incoming.stream().forEach(x -> {
+        if(!x.getUniqueIdentifier().contains("DataObjectReference") || x.getIncoming().size() == 0)
+          NetTraverse.BuildRun(bp, x, run, e);
+      });
     }
   }
 }

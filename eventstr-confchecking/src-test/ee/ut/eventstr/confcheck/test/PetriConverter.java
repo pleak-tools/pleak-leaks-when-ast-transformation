@@ -11,7 +11,7 @@ public class PetriConverter {
 
     for(int i = 0; i < nodes.length; i++) {
 
-      // Temporarily, labels instead of ids
+      // Temporarily, labels instead of ids, smth may break if use labels
       // if(!nodes[i].label.equals("")) {
       //   for(int q = 0; q < nodes.length; q++) {
       //     for(int w = 0; w < nodes[q].out.length; w++) {
@@ -23,6 +23,12 @@ public class PetriConverter {
 
       //   nodes[i].id = nodes[i].label;
       // }
+
+      // We allow multiple outgoing arcs only for intermediate data objects, 
+      // but not for 'global' (starting) data objects
+      if(nodes[i].id.contains("DataObjectReference") && nodes[i].out.length > 1 && !nodes[i].isInputFound) {
+        nodes[i].out = new String[] { new String(nodes[i].out[nodes[i].out.length - 1]) };
+      }
 
       if(nodes[i].type == NodeType.place){
         Place p = net.addPlace(nodes[i].id);
