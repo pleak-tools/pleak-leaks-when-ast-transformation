@@ -69,22 +69,32 @@ public class Unfolder {
       }
     });
 
-    Set<Place> prunedTerminals = bp.getPlaces().stream().filter(x -> x.getOutgoing().size() == 0 && !x.getName().contains("DataObjectReference")).collect(Collectors.toSet());
     ArrayList<ArrayList<String>> runs = new ArrayList<ArrayList<String>>();
+    Set<Place> starts = bp.getPlaces().stream().filter(x -> x.getIncoming().size() == 0 && x.getName().contains("StartEvent")).collect(Collectors.toSet());
     
     // Building runs
-    prunedTerminals.forEach(x -> {
+    starts.forEach(x -> {
       Map<String, Boolean> e = new HashMap<String, Boolean>();
       bp.getTransitions().stream().forEach(y -> {
         e.put(y.getUniqueIdentifier(), false);
       });
-      bp.getPlaces().stream().forEach(y -> {
-        e.put(y.getUniqueIdentifier(), false);
-      });
+      
+      Integer remainingPrev = Integer.MAX_VALUE;
+      Integer remainingNew = Integer.MAX_VALUE;
 
-      ArrayList<String> run = new ArrayList<String>();
-      NetTraverse.BuildRun(bp, x, run, e);
-      runs.add(run);
+      do {
+        remainingPrev = remainingNew;
+        bp.getPlaces().stream().forEach(y -> {
+          e.put(y.getUniqueIdentifier(), false);
+        });
+
+        ArrayList<String> run = new ArrayList<String>();
+        NetTraverse.BuildRun(bp, x, run, e);
+        runs.add(run);
+
+        remainingNew = e.entrySet().stream().filter(y -> y.getValue() == false).collect(Collectors.toList()).size();
+      }
+      while(remainingNew < remainingPrev && remainingNew > 0);
     });
     
     List<String[]> list = runs.stream().map(x -> {
