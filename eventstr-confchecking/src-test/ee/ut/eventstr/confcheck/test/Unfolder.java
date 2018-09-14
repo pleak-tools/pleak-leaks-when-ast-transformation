@@ -98,7 +98,7 @@ public class Unfolder {
     });
     
     List<String[]> list = runs.stream().map(x -> {
-      String[] subs = Lists.reverse(x).toArray(new String[x.size()]);
+      String[] subs = x.toArray(new String[x.size()]);
       return subs;
     }).collect(Collectors.toList());
     
