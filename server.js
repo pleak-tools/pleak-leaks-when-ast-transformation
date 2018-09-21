@@ -14,7 +14,8 @@ var app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.use('/leaks-when/data', express.static('/data'));
+// Serving dot files as output from data directory
+app.use('/leaks-when/data', express.static(__dirname + '/data'));
 
 app.post('/compute', (req, res) => {
   let petriPath = __dirname + '/eventstr-confchecking/bin/target/';
@@ -49,19 +50,22 @@ app.post('/upload', (req, res) => {
   var model_name = !req.body.model ? "tmp" : req.body.model;
   console.log(model_name);
 
-  rimraf.sync("/data/" + model_name);
-  fs.mkdirSync("/data/" + model_name);
+  rimraf.sync(__dirname + "/data/" + model_name);
+  const mode = parseInt('0777', 8) & ~process.umask();
+  fs.mkdirSync(__dirname + "/data/" + model_name, mode);
+  exec('chmod 777 ' + __dirname + "/data/" + model_name);
   console.log('-----------------------------------');
 
   let code = rewriter.analyze(req.body.sql_script, targets);
-  fs.writeFileSync('./pleak-leaks-when-analysis/src/RAInput.ml', code);
-  exec(`/usr/pleak/scripts/script.sh /data/${model_name}`, (err, stdout, stderr) => {
+  fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
+  var command = __dirname + `/scripts/script.sh ` + __dirname + ` /data/${model_name}`;
+  exec(command, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Oops ... something wrong").end();
       return;
     }
-    let files = fs.readdirSync(`/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
+    let files = fs.readdirSync(__dirname + `/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
     res.send({ files: files }).end();
   });
 });
