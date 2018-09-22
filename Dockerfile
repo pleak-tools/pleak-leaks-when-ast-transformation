@@ -39,5 +39,4 @@ RUN mkdir /data
 RUN npm install sudo
 RUN chmod 777 /usr/pleak/scripts/*.sh
 
-RUN ./scripts/build.sh
-CMD nohup node ./server.js
+CMD ./scripts/build.sh ; nohup node ./server.js
