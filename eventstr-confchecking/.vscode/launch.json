@@ -1,0 +1,333 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug (Launch)",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "",
+            "args": ""
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-JDOMAbout<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "JDOMAbout",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-MXMLgenerator<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "ee.ut.bpmn.utils.MXMLgenerator",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-MXMLgeneratorAtomic<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "ee.ut.bpmn.utils.MXMLgeneratorAtomic",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-LoLAParser<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.LoLAParser",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-OWFNParser<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.OWFNParser",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-PetriNetIO<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.PetriNetIO",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-TPNParser<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.TPNParser",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Decompose<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.util.Decompose",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-StructuralReduction<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.petrinet.util.StructuralReduction",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-OcletTest<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.scenario.OcletTest",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Uma<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.Uma",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-UmaFoldTest<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.UmaFoldTest",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-UmaFoldTest_Large<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.UmaFoldTest_Large",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-UmaImpliedTest<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.UmaImpliedTest",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-UmaTest<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.UmaTest",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-EventStructure<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.er.EventStructure",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-EventStructureReplay<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.er.EventStructureReplay",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-EventStructureReplay_Trace<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.er.EventStructureReplay_Trace",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-SynthesisFromES<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.er.SynthesisFromES",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-SynthesisFromES2<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.er.SynthesisFromES2",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-ModelRepair_Simple<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.repair.ModelRepair_Simple",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-ModelRepair_SubProcess<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.repair.ModelRepair_SubProcess",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-ImplicitPlaces<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.synthesis.ImplicitPlaces",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-MineSimplify<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.view.MineSimplify",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-MineSimplifyExperiment<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.view.MineSimplifyExperiment",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Precision<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.view.Precision",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-Precision_ETC<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.view.Precision_ETC",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-ViewGeneration2<eventstr-confchecking>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "hub.top.uma.view.ViewGeneration2",
+            "args": "",
+            "projectName": "eventstr-confchecking"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Attach)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": "<debug port of remote debuggee>"
+        }
+    ]
+}

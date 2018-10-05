@@ -1,0 +1,30 @@
+{
+    "run": {
+        "default": "",
+        "items": [
+            {
+                "name": "eventstr-confchecking",
+                "projectName": "eventstr-confchecking",
+                "workingDirectory": "/home/mayer/Desktop/eventstr-confchecking",
+                "args": [],
+                "vmargs": [],
+                "env": {},
+                "preLaunchTask": ""
+            }
+        ]
+    },
+    "debug": {
+        "default": "",
+        "items": [
+            {
+                "name": "eventstr-confchecking",
+                "projectName": "eventstr-confchecking",
+                "workingDirectory": "/home/mayer/Desktop/eventstr-confchecking",
+                "args": [],
+                "vmargs": [],
+                "env": {},
+                "preLaunchTask": ""
+            }
+        ]
+    }
+}
