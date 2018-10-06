@@ -59,7 +59,9 @@ app.post('/upload', (req, res) => {
   let code = rewriter.analyze(req.body.sql_script, targets);
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
   var command = __dirname + `/scripts/script.sh ` + __dirname + ` /data/${model_name}`;
-  exec(command, (err, stdout, stderr) => {
+  exec(command, {
+    maxBuffer: 500 * 1024 // otherwise analyzer will suddenly stop after 200 kb of console output
+  }, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Oops ... something wrong").end();
