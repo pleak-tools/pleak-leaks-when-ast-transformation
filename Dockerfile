@@ -2,12 +2,12 @@ FROM ubuntu:16.04
 
 RUN apt-get update
 
-RUN apt install -y ocaml
-RUN apt install -y opam
+RUN apt-get update && apt-get install -y ocaml
+RUN apt-get install -y opam
 RUN apt-get install -y libocamlgraph-ocaml-dev
 RUN apt-get -y install libxml-light-ocaml-dev
 
-RUN apt install -y curl
+RUN apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_8.x
 
 RUN apt-get install -y nodejs
@@ -19,7 +19,7 @@ RUN n stable
 
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-RUN apt -y install default-jre
+RUN apt-get -y install default-jre
 
 WORKDIR /usr/pleak
 RUN git clone https://github.com/Z3Prover/z3.git
