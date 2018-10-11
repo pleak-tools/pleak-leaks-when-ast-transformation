@@ -81,10 +81,6 @@ public class ExpandedPomsetPrefixTest2 {
 
     Set<Place> starts = bp.getPlaces().stream().filter(x -> x.getIncoming().size() == 0 && x.getName().contains("StartEvent")).collect(Collectors.toSet());
 
-
-    // List<Place> list0 = bp.getPlaces().stream().collect(Collectors.toList());
-    // Place[] pp = list0.toArray(new Place[list0.size()]);
-
     // Building runs
     starts.forEach(x -> {
       Map<String, Boolean> e = new HashMap<String, Boolean>();
@@ -92,22 +88,7 @@ public class ExpandedPomsetPrefixTest2 {
         e.put(y.getUniqueIdentifier(), false);
       });
       
-      Integer remainingPrev = Integer.MAX_VALUE;
-      Integer remainingNew = Integer.MAX_VALUE;
-
-      do {
-        remainingPrev = remainingNew;
-        bp.getPlaces().stream().forEach(y -> {
-          e.put(y.getUniqueIdentifier(), false);
-        });
-
-        ArrayList<String> run = new ArrayList<String>();
-        NetTraverse.BuildRun(bp, x, run, e);
-        runs.add(run);
-
-        remainingNew = e.entrySet().stream().filter(y -> y.getValue() == false).collect(Collectors.toList()).size();
-      }
-      while(remainingNew < remainingPrev && remainingNew > 0);
+      NetTraverse.BuildRun2(x, runs);
     });
     
     List<String[]> list = runs.stream().map(x -> {

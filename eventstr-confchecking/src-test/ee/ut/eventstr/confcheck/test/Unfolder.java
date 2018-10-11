@@ -48,13 +48,15 @@ public class Unfolder {
     PetriNode[] petri = gson.fromJson(json, PetriNode[].class);
     PetriNet net = PetriConverter.Convert(petri);
 		
-		IOUtils.toFile("net.dot", net.toDot());
+		IOUtils.toFile(id + "_net.dot", net.toDot());
 
     // Unfolding petri net
 		Unfolder_PetriNet unfolder = new Unfolder_PetriNet(net, MODE.ONEUNFOLDING);
 		unfolder.computeUnfolding();
     PetriNet bp = unfolder.getUnfoldingAsPetriNet();
     
+    IOUtils.toFile(id + "_bp.dot", bp.toDot());
+
     Set<Place> terminals = bp.getPlaces().stream().filter(x -> 
     {
       return x.getOutgoing().size() == 0;
@@ -79,22 +81,7 @@ public class Unfolder {
         e.put(y.getUniqueIdentifier(), false);
       });
       
-      Integer remainingPrev = Integer.MAX_VALUE;
-      Integer remainingNew = Integer.MAX_VALUE;
-
-      do {
-        remainingPrev = remainingNew;
-        bp.getPlaces().stream().forEach(y -> {
-          e.put(y.getUniqueIdentifier(), false);
-        });
-
-        ArrayList<String> run = new ArrayList<String>();
-        NetTraverse.BuildRun(bp, x, run, e);
-        runs.add(run);
-
-        remainingNew = e.entrySet().stream().filter(y -> y.getValue() == false).collect(Collectors.toList()).size();
-      }
-      while(remainingNew < remainingPrev && remainingNew > 0);
+      NetTraverse.BuildRun2(x, runs);
     });
     
     List<String[]> list = runs.stream().map(x -> {
