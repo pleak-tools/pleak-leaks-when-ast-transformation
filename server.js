@@ -56,6 +56,94 @@ app.post('/upload', (req, res) => {
   exec('chmod 777 ' + __dirname + "/data/" + model_name);
   console.log('-----------------------------------');
 
+  // For testing
+
+  // targets = ['sird_counts'];
+  // let sql_script = `
+  // CREATE TABLE test1 (
+  //   product_id bigserial PRIMARY KEY,
+  //   name text NOT NULL,
+  //   category bigint NOT NULL
+  // );
+  
+  // select count(t1.product_id) as con, avg(t1.product_id) as pid
+  // into test2
+  // from test1 as t1
+  // where t1.product_id < 5
+  // group by t1.category;
+  // `;
+
+  // let sql_script = `
+  // create table Person (
+  //   ID INT8 primary key,
+  //   First_Name TEXT,
+  //   Last_Name TEXT,
+  //   Birthdate DATE,
+  //   Date_Of_Death DATE,
+  //   Residence TEXT references Community(name),
+  //   Gender INT8
+  // );
+
+  // create table Params (
+  //   ID INT8 primary key,
+  //   Max_Queries INT8,
+  //   Accuracy INT8,
+  //   Confidence INT8,
+  //   Ref_Day INT8
+  // );
+
+  // create table Disease_Status (
+  //   Person_ID INT8,
+  //   Date_Of_Control INT8,
+  //   Disease_State INT8,
+  //   PRIMARY KEY (Person_ID, Date_Of_Control)
+  // );
+
+  // create table Communities_of_interest (
+  //   Name TEXT primary key
+  // );
+
+  // create table Community (
+  //   Name TEXT primary key,
+  //   Latitude INT8,
+  //   Longitude INT8
+  // );
+
+  // create or replace function Compute_Total_Population()
+  // returns TABLE (Total_Population INT8) as 
+  // $$
+  //   select count(Person.ID) as con
+  //   from Person, Communities_Of_Interest
+  //   where Communities_Of_Interest.Name = Person.Residence
+  // $$
+  // language SQL;
+
+  // select totals.con as res
+  // into total_people
+  // from Compute_Total_Population() as totals;
+
+  // create or replace function Collect_SIRD_Counts()
+  // returns TABLE (The_Date INT8, Community_Name TEXT, Disease_State INT8, Corresponding_Count INT8) as 
+  // $$
+  //   select Disease_Status.Date_Of_Control as date2,
+  //         Communities_Of_Interest.Name as name2, 
+  //         Disease_Status.Disease_State as ds, count(Person.ID) as con2
+  //   from Disease_Status, Communities_Of_Interest, Person, Params
+  //   where Communities_Of_Interest.Name = Person.Residence
+  //     and Person.ID = Disease_Status.Person_ID
+  //     and Disease_Status.Date_Of_Control > (Params.Ref_Day - Params.Max_Queries + 1)
+  //     and Disease_Status.Date_Of_Control < Params.Ref_Day
+  //   group by Disease_Status.Date_Of_Control,
+  //         Communities_Of_Interest.Name, 
+  //         Disease_Status.Disease_State
+  // $$
+  // language SQL;
+
+  // select sird.date2 as date, sird.con2 as quant
+  // into sird_counts
+  // from Collect_SIRD_Counts() as sird;
+  // `;
+
   let code = rewriter.analyze(req.body.sql_script, targets);
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
   var command = __dirname + `/scripts/script.sh ` + __dirname + ` /data/${model_name}`;

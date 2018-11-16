@@ -39,7 +39,7 @@ let PgQuery = require('pg-query-parser');
   let dumpTableElts = (tableElts) => {
     let tail = tableElts
         .filter(elem => elem.ColumnDef)
-        .slice(1)
+        .slice(0)
         .reduceRight((accumulator, elem) => {
       if (accumulator) {
         return `(RLMap.add "${elem.ColumnDef.colname}" ${dumpColumnType(elem)} ${accumulator})`;
@@ -51,6 +51,9 @@ let PgQuery = require('pg-query-parser');
       let elem = tableElts[0];
       return `(RLMap.add "${elem.ColumnDef.colname}" ${dumpColumnType(elem)} ${tail}, [${dumpPK(tableElts)}])`;  
     }
+    else {
+      return tail;
+    }
   };
   
 
@@ -60,7 +63,7 @@ let PgQuery = require('pg-query-parser');
 // =========================================================
 // =========================================================
 
-let operMap = { "<@>": "OPGeoDist", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
+let operMap = { "<@>": "OPGeoDist", "-": "OPNeg", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
 
 let dumpFieldRenaming = (fields, aliases) => {
     let list = [];
@@ -91,6 +94,15 @@ let dumpFieldRenaming3 = (fields, parameters) => {
     return list.join("");
 };
 
+let aggregations = {};
+let group_by = [];
+let groupOperationsMapping = {
+  "count": "AGCount",
+  "max": "AGMax",
+  "min": "AGMin",
+  "avg": "AGAverage",
+  "sum": "AGSum"
+};
 
 let traverse = function (node, stack, fdefs, context, fields, aliases, projected_fields) {
     if (Array.isArray(node)) {
@@ -104,11 +116,21 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             traverse(node.SelectStmt.withClause, stack, fdefs, context, fields, aliases, projected_fields);
         }
 
+        if(node.groupClause) {
+          node.groupClause.forEach((child) => {
+            var currentGroupField = child.ColumnRef.fields.map((field) => field.String.str).join('.');
+            group_by.push(currentGroupField);
+          });
+        }
+
         if (node.fromClause) {
             if (node.whereClause)
                 traverse(node.whereClause, [], fdefs, context, fields, aliases, projected_fields);
             else
                 traverse(node.fromClause, [],  fdefs, context, fields, aliases, projected_fields);
+
+            if (node.groupClause)
+                traverse(node.groupClause, [], fdefs, context, fields, aliases, projected_fields);
 
             if (node.fromClause[0].JoinExpr) {
                 console.log("========= from clause with join expr");
@@ -236,7 +258,22 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 if (elem.ResTarget.val.FuncCall) {
                     let local_stack = [];
                     traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
-                    return `    RANewColumn (\n${acc},\n     "${elem.ResTarget.name}", ${local_stack.pop()})`;
+                    let first = local_stack[0];
+                    let last = local_stack.pop();
+                    let aliasName = `"${elem.ResTarget.name}"`;
+
+                    if (Object.keys(groupOperationsMapping).includes(first)) {
+                      if(aggregations[first]) {
+                        if(!aggregations[first].includes(aliasName)) {
+                          aggregations[first].push(aliasName);
+                        }
+                      }
+                      else {
+                        aggregations[first] = [aliasName];
+                      }
+                    }
+
+                    return `    RANewColumn (\n${acc},\n     ${aliasName}, ${last})`;
                 } else if (elem.ResTarget.val.CoalesceExpr || elem.ResTarget.val.MinMaxExpr) {
                     let local_stack = [];
                     traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
@@ -269,10 +306,17 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             if (local_stack[0] === "point") {
                 if (context != "function")
                     stack.push(`RAXattribute ${local_stack[1]}; RAXattribute ${local_stack[2]}`);
-                else 
+                else
                     stack.push(`${local_stack[1]} ${local_stack[2]}`);
             } else if (local_stack[0] === "ceil") {
                 stack.push(`RAXoper (OPCeiling, [${local_stack.pop()}])`);
+            } else if (Object.keys(groupOperationsMapping).includes(local_stack[0])) {
+              let operation = local_stack[0];
+              let operand = local_stack.pop();
+              
+              // We push up operation to change the name for aggregation to alias
+              stack.push(operation);
+              stack.push(`RAXattribute ${operand}`);
             } else
                 stack.push(`${local_stack[0]} ${local_stack.slice(1).join(" ")}`)
         } else if (node.A_Expr) {
@@ -424,14 +468,26 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
 
             if (context !== 'function-def') {
                 projection = projection.filter(v => !partition_ids.includes(v));
+                let groupByStmt = group_by.map(x => `"${x}"`);
+                let aggrStmt = Object.keys(aggregations).map(operation => 
+                  aggregations[operation].map(operand => `(${operand}, ${groupOperationsMapping[operation]})`).join(';')).join(';');
+
+                if(groupByStmt.length > 0 || aggrStmt.length > 0) {
+                  stack.push(`RAAggregate (\n${stack.pop()}, \n [${groupByStmt.join(';')}], [${aggrStmt}])`);
+                  group_by = [];
+                  aggregations = {};
+                }
+
                 var projection_part = `    RAProject(\n${stack.pop()},\n      [${projection.join("; ")}])`;
+
                 var renaming = `${dumpFieldRenaming3(projection, proj_aliases)}${projection_part}\n  ${projection.map(e => ")").join("")}`;
                 projection_part = partitions.reduceRight((acc, elem) => `\n  RAAddSortColumn (\n${acc},\n    ${elem})`, renaming);
                 stack.push(projection_part);
-                
+                 
                 if (node.SelectStmt.intoClause) {
                     var relName = node.SelectStmt.intoClause.IntoClause.rel.RangeVar.relname;
-                    stack.push(`RALetExp ("${relName}",${stack.pop()}`);
+                      stack.push(`RALetExp ("${relName}",${stack.pop()}`);
+                      
                     for (var member in fields) delete fields[member];
                 }
             }
@@ -486,6 +542,8 @@ module.exports = {
     analyze: function(query, targets) {
         let result = PgQuery.parse(query);
         let ast = result.query;
+        aggregations = {};
+        group_by = [];
         console.log('=============================================');
         console.log(JSON.stringify(ast));
         console.log('=============================================');
