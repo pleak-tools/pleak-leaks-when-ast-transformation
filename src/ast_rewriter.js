@@ -103,6 +103,7 @@ let groupOperationsMapping = {
   "avg": "AGAverage",
   "sum": "AGSum"
 };
+let wildCardAggrFields = {};
 
 let traverse = function (node, stack, fdefs, context, fields, aliases, projected_fields) {
     if (Array.isArray(node)) {
@@ -184,20 +185,22 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                     stack.push(`        (fullouterjoin\n${dumpFieldRenaming(fields, mapping).map(elem => "          (\n" + elem + ")\n").join("")}          (${local_stack.pop()}))`);
                 }
             } else {
-                let mapping = node.fromClause.reduce( (acc, clause) => {
-                    let local_stack = [];
-                    let alias = "", relname = "";
+                let mapping = node.fromClause.reduce((acc, clause) => {
+                    let alias = clause.RangeFunction 
+                        ? clause.RangeFunction.alias.Alias.aliasname 
+                        : (clause.RangeVar.alias 
+                            ? clause.RangeVar.alias.Alias.aliasname  
+                            : clause.RangeVar.relname);
 
-                    if (clause.RangeFunction) {
-                        alias = clause.RangeFunction.alias.Alias.aliasname;
-                        let name = clause.RangeFunction.functions[0][0].FuncCall.funcname[0].String.str;
-                        relname =  `RATable "${name}"`; //= local_stack.pop();
-                    } else {
-                        alias = clause.RangeVar.relname;
-                        if (clause.RangeVar.alias)
-                            alias = clause.RangeVar.alias.Alias.aliasname;
-                        relname = `RATable "${clause.RangeVar.relname}"`;
+                    let name = clause.RangeFunction 
+                        ? clause.RangeFunction.functions[0][0].FuncCall.funcname[0].String.str
+                        : clause.RangeVar.relname;
+
+                    let relname = `RATable "${name}"`;
+                    if(wildCardAggrFields[name]) {
+                      wildCardAggrFields[alias] = wildCardAggrFields[name];
                     }
+
                     acc[alias] = relname;
                     return acc;
                 }, {});
@@ -312,7 +315,10 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 stack.push(`RAXoper (OPCeiling, [${local_stack.pop()}])`);
             } else if (Object.keys(groupOperationsMapping).includes(local_stack[0])) {
               let operation = local_stack[0];
-              let operand = local_stack.pop();
+              var aggregateTableAlias = Object.keys(aliases).filter(x => x != "parameters")[0];
+              let operand = node.agg_star 
+                  ? `"${aggregateTableAlias}.${wildCardAggrFields[aggregateTableAlias]}"`
+                  : local_stack.pop();
               
               // We push up operation to change the name for aggregation to alias
               stack.push(operation);
@@ -502,6 +508,7 @@ let analyzeDDL = (ast) => {
             ddl.reduceRight((accumulator, stmt) => {
             let relname = stmt.CreateStmt.relation.RangeVar.relname;
             let tableElts = stmt.CreateStmt.tableElts;
+            wildCardAggrFields[relname] = tableElts[0] ? tableElts[0].ColumnDef.colname : null;
             if (accumulator) {
                 return `  RLMap.add "${relname}"\n    ${dumpTableElts(tableElts)}\n  (\n${accumulator})`;
             } else {

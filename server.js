@@ -66,11 +66,11 @@ app.post('/upload', (req, res) => {
   //   category bigint NOT NULL
   // );
   
-  // select count(t1.product_id) as con, avg(t1.product_id) as pid
+  // select count(*) as con, avg(t1.category) as pid
   // into test2
   // from test1 as t1
   // where t1.product_id < 5
-  // group by t1.category;
+  // group by t1.name;
   // `;
 
   // let sql_script = `
@@ -100,6 +100,7 @@ app.post('/upload', (req, res) => {
   // );
 
   // create table Communities_of_interest (
+  //   Comm_ID INT8,
   //   Name TEXT primary key
   // );
 
@@ -112,7 +113,7 @@ app.post('/upload', (req, res) => {
   // create or replace function Compute_Total_Population()
   // returns TABLE (Total_Population INT8) as 
   // $$
-  //   select count(Person.ID) as con
+  //   select count(*) as con
   //   from Person, Communities_Of_Interest
   //   where Communities_Of_Interest.Name = Person.Residence
   // $$
