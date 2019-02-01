@@ -36,11 +36,16 @@ let PgQuery = require('pg-query-parser');
     }
   };
  
-  let dumpTableElts = (tableElts) => {
+  let dumpTableElts = (tableElts, policyTableToComplement) => {
     let tail = tableElts
         .filter(elem => elem.ColumnDef)
         .slice(0)
         .reduceRight((accumulator, elem) => {
+
+      if(policyTableToComplement && policyTableToComplement.length) {
+        policyTableToComplement.forEach(x => x.cols.push(elem.ColumnDef.colname));
+      }
+
       if (accumulator) {
         return `(RLMap.add "${elem.ColumnDef.colname}" ${dumpColumnType(elem)} ${accumulator})`;
       } else {
@@ -501,18 +506,22 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
     }
 };
 
-let analyzeDDL = (ast) => {
+let analyzeDDL = (ast, tables) => {
     let ddl = ast.filter( stmt => stmt.CreateStmt );
     if (ddl.length > 0) {
         let result =
             ddl.reduceRight((accumulator, stmt) => {
             let relname = stmt.CreateStmt.relation.RangeVar.relname;
             let tableElts = stmt.CreateStmt.tableElts;
+            let policyTableToComplement = tables ? tables.filter(x => x.table == relname) : null;
+            
             wildCardAggrFields[relname] = tableElts[0] ? tableElts[0].ColumnDef.colname : null;
+
+            let tablesDump = dumpTableElts(tableElts, policyTableToComplement);
             if (accumulator) {
-                return `  RLMap.add "${relname}"\n    ${dumpTableElts(tableElts)}\n  (\n${accumulator})`;
+                return `  RLMap.add "${relname}"\n    ${tablesDump}\n  (\n${accumulator})`;
             } else {
-                return `  RLMap.singleton "${relname}"\n    ${dumpTableElts(tableElts)}\n  `;
+                return `  RLMap.singleton "${relname}"\n    ${tablesDump}\n  `;
             }
             }, null) + ";;";
         return `let aiddistrDbdesc =\n   ${result}`;
@@ -545,8 +554,29 @@ let analyzeDML = (ast, targets) => {
     return "";
 }
 
+let analyzePolicies = (policies, ast) => {
+  let tables = policies.query.map(x => x.GrantStmt).map(x => {
+    let tableName = x.objects[0].RangeVar.relname;
+    let colsNames = [];
+    if(x.privileges[0].AccessPriv.cols) {
+      colsNames = x.privileges[0].AccessPriv.cols.reduce((acc, cur) => {
+        acc.push(cur.String.str);
+        return acc;
+      }, []);
+    }
+    
+    return {table: tableName, cols: colsNames};
+  });
+
+  analyzeDDL(ast, tables.filter(x => !x.cols.length));
+
+  let pairs = [];
+  tables.forEach(x => x.cols.forEach(col => pairs.push(`("${x.table}", "${col}")`)));
+  return `let access_granted = [${pairs.join('; ')}];;`;
+}
+
 module.exports = {
-    analyze: function(query, targets) {
+    analyze: function(query, policies, targets) {
         let result = PgQuery.parse(query);
         let ast = result.query;
         aggregations = {};
@@ -555,9 +585,14 @@ module.exports = {
         console.log(JSON.stringify(ast));
         console.log('=============================================');
         var ddlstr = analyzeDDL(ast);
+
+        let aggrPolicies = policies.join('\n');
+        let policyResult = PgQuery.parse(aggrPolicies);
+        let pol = analyzePolicies(policyResult, ast);
+
         var dmlstr = analyzeDML(ast, targets);
 
-        let res = `open GrbGraphs;;\nopen GrbInput;;\n\n${ddlstr}\n\n${dmlstr}\n`;
+        let res = `open GrbGraphs;;\nopen GrbInput;;\n\n${pol}\n\n${ddlstr}\n\n${dmlstr}\n`;
         console.log(res);
         return res;
     }
