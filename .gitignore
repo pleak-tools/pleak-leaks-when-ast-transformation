@@ -1,2 +1,6 @@
 node_modules
 data
+pleak-leaks-when-analysis/*.json
+pleak-leaks-when-analysis/*.dot
+eventstr-confchecking/bin/target/*.json
+eventstr-confchecking/bin/target/*.dot

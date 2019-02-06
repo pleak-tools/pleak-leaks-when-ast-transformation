@@ -50,10 +50,25 @@ app.post('/upload', (req, res) => {
   var model_name = !req.body.model ? "tmp" : req.body.model;
   console.log(model_name);
 
-  rimraf.sync(__dirname + "/data/" + model_name);
+  // rimraf.sync(__dirname + `/data/${req.body.diagram_id}`);
   const mode = parseInt('0777', 8) & ~process.umask();
-  fs.mkdirSync(__dirname + "/data/" + model_name, mode);
-  exec('chmod 777 ' + __dirname + "/data/" + model_name);
+
+  let dir = __dirname + `/data/${req.body.diagram_id}`;
+  if (!fs.existsSync(dir))
+    fs.mkdirSync(dir, mode);
+  
+  dir = __dirname + `/data/${req.body.diagram_id}/run_${req.body.run_number}`;
+  if (!fs.existsSync(dir))
+    fs.mkdirSync(dir, mode);
+
+  dir = __dirname + `/data/${req.body.diagram_id}/run_${req.body.run_number}/${req.body.selected_dto}`;
+  rimraf.sync(dir);
+  if (!fs.existsSync(dir))
+    fs.mkdirSync(dir, mode);
+
+  
+
+  exec('chmod 777 ' + dir);
   console.log('-----------------------------------');
 
   // For testing
