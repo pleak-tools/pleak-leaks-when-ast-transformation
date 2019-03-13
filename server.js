@@ -135,18 +135,27 @@ app.post('/ga', (req, res) => {
   let queryFileId = uuidv4();
   let queryFullPath = `${banachDir}/${queryFileId}.sql`;
   fs.writeFileSync(queryFullPath, queryInput);
-
-  // path.dirname(filename).split(path.sep).pop();
-
   
+  // Tables data
+  for(let table in req.body.tableDatas) {
+    let tableInput = req.body.tableDatas[table];
+    // let tableFileId = uuidv4();
+    let tableFullPath = `${banachDir}/${table}.db`;
+    fs.writeFileSync(tableFullPath, tableInput);
+  }
+
   // var command = `dist/build/banach/banach -QDpa --db-create-tables demo_schema.sql demo_query.sql demo_attacker.att --policy=demo_policy.plc --epsilon 0.3 --beta 0.0 --numOfQueries 1`;
-  var command = `dist/build/banach/banach -QDpa --db-create-tables ${schemasFileId}.sql ${queryFileId}.sql ${attackerSettingsFileId}.att --policy=${policyFileId}.plc --epsilon ${req.body.attackerAdvantage} --beta 0.0 --numOfQueries 2`;
+  var command = `dist/build/banach/banach -QDpa --db-create-tables ${schemasFileId}.sql ${queryFileId}.sql ${attackerSettingsFileId}.att --policy=${policyFileId}.plc --epsilon ${req.body.attackerAdvantage} --numOfQueries 2`;
 
   exec(command, { cwd: banachDir, maxBuffer: 500 * 1024 }, (err, stdout, stderr) => {
     fs.unlinkSync(policyFullPath);
     fs.unlinkSync(attackerFullPath);
     fs.unlinkSync(schemasFullPath);
     fs.unlinkSync(queryFullPath);
+
+    for(let table in req.body.tableDatas) {
+      fs.unlinkSync(`${banachDir}/${table}.db`);
+    }
 
     if (err) {
       console.log(`stderr: ${stderr}`);

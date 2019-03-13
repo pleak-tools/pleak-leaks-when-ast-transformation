@@ -591,7 +591,7 @@ let extractSensitivityAttributes = (policyResult, inputGrantStmt) => {
     let allLinesBefore = inputGrantStmt.substring(0, symbolNumber);
     let linesNumber = allLinesBefore.split('\n').length;
     let approxValue = parseInt(inputGrantStmt.substring(symbolNumber + 8, inputGrantStmt.length));
-    let resp = `${policyResult.GrantStmt.objects[0].RangeVar.relname}.${policyResult.GrantStmt.privileges[0].AccessPriv.cols[linesNumber - 1].String.str} approx ${approxValue}`;
+    let resp = `${policyResult.GrantStmt.objects[0].RangeVar.relname}.${policyResult.GrantStmt.privileges[0].AccessPriv.cols[linesNumber - 1].String.str} approx ${approxValue};`;
     allMatches.push(resp);
   }
 
