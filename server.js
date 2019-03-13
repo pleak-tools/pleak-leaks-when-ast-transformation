@@ -3,9 +3,11 @@ var rewriter = require('./src/ast_rewriter');
 var express = require('express');
 var cors = require('cors');
 var bodyParser = require('body-parser');
+const uuidv4 = require('uuid/v4');
 
 var fs = require('fs');
 var rimraf = require('rimraf');
+var path = require('path');
 const exec = require('child_process').exec;
 
 console.log(rewriter);
@@ -89,7 +91,7 @@ app.post('/upload', (req, res) => {
   // `;
 
   // Works with current given policies for a given role
-  let code = rewriter.analyze(req.body.sql_script, req.body.policy, targets);
+  let code = rewriter.analyzeLeaksWhen(req.body.sql_script, req.body.policy, targets);
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
   var command = __dirname + `/scripts/script.sh ` + __dirname + ` /data/${model_name}`;
   exec(command, {
@@ -104,4 +106,56 @@ app.post('/upload', (req, res) => {
     res.send({ files: files }).end();
   });
 });
+
+app.post('/ga', (req, res) => {
+  console.log('-----------------------------------');
+
+  var banachDir = '../pleak-sql-analysis/banach';
+
+  // Policy
+  let policyInput = rewriter.analyzeGA(req.body.policy);
+  let policyFileId = uuidv4();
+  let policyFullPath = `${banachDir}/${policyFileId}.plc`;
+  fs.writeFileSync(policyFullPath, policyInput);
+  
+  // Attacker settings
+  let attackerSettingsInput = req.body.attackerSettings[0];
+  let attackerSettingsFileId = uuidv4();
+  let attackerFullPath = `${banachDir}/${attackerSettingsFileId}.att`;
+  fs.writeFileSync(attackerFullPath, attackerSettingsInput);
+
+  // Schemas
+  let schemasInput = req.body.schema.join('\n');
+  let schemasFileId = uuidv4();
+  let schemasFullPath = `${banachDir}/${schemasFileId}.sql`;
+  fs.writeFileSync(schemasFullPath, schemasInput);
+
+  // Queries
+  let queryInput = req.body.queries.join('\n');
+  let queryFileId = uuidv4();
+  let queryFullPath = `${banachDir}/${queryFileId}.sql`;
+  fs.writeFileSync(queryFullPath, queryInput);
+
+  // path.dirname(filename).split(path.sep).pop();
+
+  
+  // var command = `dist/build/banach/banach -QDpa --db-create-tables demo_schema.sql demo_query.sql demo_attacker.att --policy=demo_policy.plc --epsilon 0.3 --beta 0.0 --numOfQueries 1`;
+  var command = `dist/build/banach/banach -QDpa --db-create-tables ${schemasFileId}.sql ${queryFileId}.sql ${attackerSettingsFileId}.att --policy=${policyFileId}.plc --epsilon ${req.body.attackerAdvantage} --beta 0.0 --numOfQueries 2`;
+
+  exec(command, { cwd: banachDir, maxBuffer: 500 * 1024 }, (err, stdout, stderr) => {
+    fs.unlinkSync(policyFullPath);
+    fs.unlinkSync(attackerFullPath);
+    fs.unlinkSync(schemasFullPath);
+    fs.unlinkSync(queryFullPath);
+
+    if (err) {
+      console.log(`stderr: ${stderr}`);
+      res.send(400, "Oops ... something wrong").end();
+      return;
+    }
+    
+    res.send({ result: stdout }).end();
+  });
+});
+
 app.listen(3000, () => console.log('Listening on port 3000'));

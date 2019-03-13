@@ -68,7 +68,7 @@ let PgQuery = require('pg-query-parser');
 // =========================================================
 // =========================================================
 
-let operMap = { "<@>": "OPGeoDist", "-": "OPNeg", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
+let operMap = {"*": "OPMult",  "<@>": "OPGeoDist", "-": "OPNeg", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
 
 let dumpFieldRenaming = (fields, aliases) => {
     let list = [];
@@ -335,7 +335,14 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             for (var child in node)
                 traverse(node[child], local_stack, fdefs, "operator", fields, aliases, projected_fields);
 
-            stack.push(`RAXoper (${operMap[local_stack[0]]}, [${local_stack.slice(1).join("; ")}])`);            
+            // let curOper = operMap[local_stack[0]] == "OPNeg" ? `${"OPPlus"}` : operMap[local_stack[0]];
+            if(operMap[local_stack[0]] != "OPNeg")
+              stack.push(`RAXoper (${operMap[local_stack[0]]}, [${local_stack.slice(1).join("; ")}])`);
+            else{
+              let allOperandsWithoutLast = local_stack.slice(1, local_stack.length - 1);
+              stack.push(`RAXoper (OPPlus, [${allOperandsWithoutLast.join("; ")}; RAXoper (OPNeg, [${local_stack[local_stack.length - 1]}])])`);
+            }
+
         } else if (node.BoolExpr) {
             var local_stack = [];
             traverse(node.BoolExpr, local_stack, fdefs, "operator", fields, aliases, projected_fields);
@@ -575,8 +582,24 @@ let analyzePolicies = (policies, ast) => {
   return `let access_granted = [${pairs.join('; ')}];;`;
 }
 
+let extractSensitivityAttributes = (policyResult, inputGrantStmt) => {
+  let ptrn = / approx /g;
+  var match;
+  let allMatches = [];
+  while ((match = ptrn.exec(inputGrantStmt)) != null) {
+    let symbolNumber = match.index;
+    let allLinesBefore = inputGrantStmt.substring(0, symbolNumber);
+    let linesNumber = allLinesBefore.split('\n').length;
+    let approxValue = parseInt(inputGrantStmt.substring(symbolNumber + 8, inputGrantStmt.length));
+    let resp = `${policyResult.GrantStmt.objects[0].RangeVar.relname}.${policyResult.GrantStmt.privileges[0].AccessPriv.cols[linesNumber - 1].String.str} approx ${approxValue}`;
+    allMatches.push(resp);
+  }
+
+  return allMatches;
+}
+
 module.exports = {
-    analyze: function(query, policies, targets) {
+    analyzeLeaksWhen: function(query, policies, targets) {
         let result = PgQuery.parse(query);
         let ast = result.query;
         aggregations = {};
@@ -588,12 +611,43 @@ module.exports = {
 
         let aggrPolicies = policies.join('\n');
         let policyResult = PgQuery.parse(aggrPolicies);
+        
         let pol = analyzePolicies(policyResult, ast);
-
         var dmlstr = analyzeDML(ast, targets);
 
         let res = `open GrbGraphs;;\nopen GrbInput;;\n\n${pol}\n\n${ddlstr}\n\n${dmlstr}\n`;
         console.log(res);
         return res;
-    }
+    },
+
+    analyzeGA: function(policies) {
+      // let result = PgQuery.parse(query);
+      
+      // let ast = result.query;
+      // let funcs = ast.filter(stmt => stmt.CreateFunctionStmt);
+      // let qwe = PgQueryDeparse.deparse(funcs);
+
+      for(let i = 0; i < policies.length; i++) {
+        let splitGrants = policies[i].toLowerCase().split('grant');
+        let withoutEmptyLine = splitGrants.slice(1, splitGrants.length).map(x => `grant${x}`);
+
+        if(splitGrants.length > 2) {
+          policies.splice(i, 1, ...withoutEmptyLine);
+        }
+      }
+
+      let aggrPolicies = policies.join('\n');
+      let policyResult = PgQuery.parse(aggrPolicies);
+
+      let sensitivities = [];
+      for(let i = 0; i < policyResult.query.length; i++) {
+        let tableSensitivities =  extractSensitivityAttributes(policyResult.query[i], policies[i]);
+        sensitivities = sensitivities.concat(tableSensitivities);
+      }
+      
+      let sensitivityInput = `leak\n${sensitivities.join('\n')}\ncost\n100`;
+      // let pol = analyzePolicies(policyResult, ast);
+      // let res = `open GrbGraphs;;\nopen GrbInput;;\n\n${pol}\n\n${ddlstr}\n\n${dmlstr}\n`;
+      return sensitivityInput;
+  }
 }
