@@ -245,7 +245,11 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             traverse(node.ResTarget, stack, fdefs, context, fields, aliases, projected_fields);
             // console.log("Analyzing", node.ResTarget.name, stack);
             if (node.ResTarget.val.TypeCast) {
-                stack.pop(); stack.pop(); // Reference to data type
+                while(stack.length > 1) {
+                  // For int8 output type there is only 1 value in stack
+                  // For others, there was odd pg value
+                  stack.pop(); // Reference to data type
+                }
             }
 
             if (node.ResTarget.name)
