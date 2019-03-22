@@ -47,7 +47,7 @@ app.post('/upload', (req, res) => {
   let targets = [];
   if (req.body.targets) {
     console.log(req.body.targets);
-    targets = req.body.targets.split(',');
+    targets = req.body.targets.split(',').map(x => x.replace('\n', ''));
   }
   var model_name = !req.body.model ? "tmp" : req.body.model;
   console.log(model_name);

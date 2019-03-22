@@ -216,7 +216,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 if (node.fromClause && node.fromClause.find(elem => elem.JoinExpr)) {
                     console.log("CASE A");
                     stack.push(`        fullouterjoin\n${dumpFieldRenaming(fields, aliases).map(elem => "          (" + elem + ")\n").join("")}`);
-                } else if (node.fromClause && node.whereClause && Object.keys(mapping).length > 1) {
+                } else if ((node.fromClause || node.whereClause) && Object.keys(mapping).length > 1) {
                     console.log("CASE B");
                     stack.push(`        RACartesian [\n${dumpFieldRenaming(fields, aliases).map(elem => elem).join(";\n")}\n        ]`);
                 } 
@@ -224,8 +224,48 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                     console.log("CASE C");
                     console.log("fields", fields);
                     delete fields.parameters;
-                    stack.push(`${dumpFieldRenaming2(fields, aliases).map(elem => elem).join(";\n")}`);                
+                    stack.push(`${dumpFieldRenaming2(fields, aliases).map(elem => elem).join(";\n")}`);
                 }
+            }
+
+            if(!node.whereClause){
+              let inter = stack.pop();
+
+              // Process function calls appearing within the from clause
+              console.log("((((((((((((((");
+              console.log(JSON.stringify(node.targetList));
+  
+              inter = node.targetList.filter(elem => !!!(elem.ResTarget.val.FuncCall && elem.ResTarget.val.FuncCall.over)
+              ).reduceRight((acc, elem) => {
+                  if (elem.ResTarget.val.FuncCall) {
+                      let local_stack = [];
+                      traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
+                      let first = local_stack[0];
+                      let last = local_stack.pop();
+                      let aliasName = `"${elem.ResTarget.name}"`;
+  
+                      if (Object.keys(groupOperationsMapping).includes(first)) {
+                        if(aggregations[first]) {
+                          if(!aggregations[first].includes(aliasName)) {
+                            aggregations[first].push(aliasName);
+                          }
+                        }
+                        else {
+                          aggregations[first] = [aliasName];
+                        }
+                      }
+  
+                      return `    RANewColumn (\n${acc},\n     ${aliasName}, ${last})`;
+                  } else if (elem.ResTarget.val.CoalesceExpr || elem.ResTarget.val.MinMaxExpr) {
+                      let local_stack = [];
+                      traverse(elem.ResTarget, local_stack, fdefs, "projection", fields, aliases, projected_fields);
+                      return `    RANewColumn (\n${acc},\n     "${elem.ResTarget.name}", ${local_stack.pop()})`;
+                  } else {
+                      return acc;
+                  }
+              }, inter);
+  
+              stack.push(`${inter}`);
             }
         }
 
