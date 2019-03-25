@@ -1,3 +1,6 @@
 #!/bin/sh
-cd /usr/pleak/pleak-leaks-when-analysis/src
+SERVERDIR=$1
+cd "$1/pleak-leaks-when-analysis/src"
+wait
 ocamlbuild -use-ocamlfind GrbDriver.native
+wait

@@ -58,7 +58,7 @@ app.post('/upload', (req, res) => {
   let dir = __dirname + `/data/${req.body.diagram_id}`;
   if (!fs.existsSync(dir))
     fs.mkdirSync(dir, mode);
-  
+
   dir = __dirname + `/data/${req.body.diagram_id}/run_${req.body.run_number}`;
   if (!fs.existsSync(dir))
     fs.mkdirSync(dir, mode);
@@ -68,7 +68,7 @@ app.post('/upload', (req, res) => {
   if (!fs.existsSync(dir))
     fs.mkdirSync(dir, mode);
 
-  
+
 
   exec('chmod 777 ' + dir);
   console.log('-----------------------------------');
@@ -82,7 +82,7 @@ app.post('/upload', (req, res) => {
   //   name text NOT NULL,
   //   category bigint NOT NULL
   // );
-  
+
   // select count(t1.product_id) as con, avg(t1.category) as pid
   // into test2
   // from test1 as t1
@@ -94,16 +94,29 @@ app.post('/upload', (req, res) => {
   let code = rewriter.analyzeLeaksWhen(req.body.sql_script, req.body.policy, targets);
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
   var command = __dirname + `/scripts/script.sh ` + __dirname + ` /data/${model_name}`;
-  exec(command, {
-    maxBuffer: 500 * 1024 // otherwise analyzer will suddenly stop after 200 kb of console output
-  }, (err, stdout, stderr) => {
-    if (err) {
-      console.log(`stderr: ${stderr}`);
-      res.send(400, "Oops ... something wrong").end();
-      return;
-    }
-    let files = fs.readdirSync(__dirname + `/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
-    res.send({ files: files }).end();
+  var modelDir = __dirname + `/data/${model_name}`;
+
+  let files1 = fs.readdirSync(modelDir);
+  for (const file of files1) {
+    fs.unlinkSync(path.join(modelDir, file));
+  }
+
+  var commandBuild = __dirname + `/scripts/build.sh ` + __dirname;
+  exec(commandBuild, (err, stdout, stderr) => {
+
+    exec(command, {
+      maxBuffer: 500 * 1024 // otherwise analyzer will suddenly stop after 200 kb of console output
+    }, (err, stdout, stderr) => {
+      if (err) {
+        console.log(`stderr: ${stderr}`);
+        res.send(400, stderr).end();
+        return;
+      }
+      else{
+        let files = fs.readdirSync(__dirname + `/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
+        res.send({ files: files }).end();
+      }
+    });
   });
 });
 
@@ -117,7 +130,7 @@ app.post('/ga', (req, res) => {
   let policyFileId = uuidv4();
   let policyFullPath = `${banachDir}/${policyFileId}.plc`;
   fs.writeFileSync(policyFullPath, policyInput);
-  
+
   // Attacker settings
   let attackerSettingsInput = req.body.attackerSettings[0];
   let attackerSettingsFileId = uuidv4();
@@ -135,9 +148,9 @@ app.post('/ga', (req, res) => {
   let queryFileId = uuidv4();
   let queryFullPath = `${banachDir}/${queryFileId}.sql`;
   fs.writeFileSync(queryFullPath, queryInput);
-  
+
   // Tables data
-  for(let table in req.body.tableDatas) {
+  for (let table in req.body.tableDatas) {
     let tableInput = req.body.tableDatas[table];
     // let tableFileId = uuidv4();
     let tableFullPath = `${banachDir}/${table}.db`;
@@ -153,7 +166,7 @@ app.post('/ga', (req, res) => {
     fs.unlinkSync(schemasFullPath);
     fs.unlinkSync(queryFullPath);
 
-    for(let table in req.body.tableDatas) {
+    for (let table in req.body.tableDatas) {
       fs.unlinkSync(`${banachDir}/${table}.db`);
     }
 
@@ -162,7 +175,7 @@ app.post('/ga', (req, res) => {
       res.send(400, "Oops ... something wrong").end();
       return;
     }
-    
+
     res.send({ result: stdout }).end();
   });
 });
