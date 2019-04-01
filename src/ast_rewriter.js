@@ -508,7 +508,11 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                             return result;
                         });
 
-                        var partition_expression = `"${elem.ResTarget.name}", [${part_fields.join("; ")}], ${sortingColumns.filter(v => part_fields.indexOf(v) < 0)}`;
+                        // Analyzer accepts only one sorting column
+                        let oneSortingColumn = sortingColumns.length > 1 
+                          ? sortingColumns.filter(v => part_fields.indexOf(v) < 0)
+                          : sortingColumns;
+                        var partition_expression = `"${elem.ResTarget.name}", [${part_fields.join("; ")}], ${oneSortingColumn}`;
                         console.log("\n\nHERE", partition_expression);
                         console.log("HERE", part_fields);
                         partitions.push(partition_expression);

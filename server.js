@@ -144,6 +144,7 @@ app.post('/ga', (req, res) => {
   fs.writeFileSync(schemasFullPath, schemasInput);
 
   // Queries
+  let numberOfQueries = req.body.queries.length;
   let queryInput = req.body.queries.join('\n');
   let queryFileId = uuidv4();
   let queryFullPath = `${banachDir}/${queryFileId}.sql`;
@@ -158,7 +159,7 @@ app.post('/ga', (req, res) => {
   }
 
   // var command = `dist/build/banach/banach -QDpa --db-create-tables demo_schema.sql demo_query.sql demo_attacker.att --policy=demo_policy.plc --epsilon 0.3 --beta 0.0 --numOfQueries 1`;
-  var command = `dist/build/banach/banach -QDpa --db-create-tables ${schemasFileId}.sql ${queryFileId}.sql ${attackerSettingsFileId}.att --policy=${policyFileId}.plc --epsilon ${req.body.attackerAdvantage} --numOfQueries 2`;
+  var command = `dist/build/banach/banach -QDpa --db-create-tables ${schemasFileId}.sql ${queryFileId}.sql ${attackerSettingsFileId}.att --policy=${policyFileId}.plc --epsilon ${req.body.attackerAdvantage} --numOfQueries ${numberOfQueries}`;
 
   exec(command, { cwd: banachDir, maxBuffer: 500 * 1024 }, (err, stdout, stderr) => {
     fs.unlinkSync(policyFullPath);
