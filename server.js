@@ -114,6 +114,16 @@ app.post('/upload', (req, res) => {
       }
       else{
         let files = fs.readdirSync(__dirname + `/data/${model_name}`).map(elem => `/leaks-when/data/${model_name}/${elem}`);
+        if(req.body.simplificationTarget){
+          let dotFiles = fs.readdirSync(__dirname + `/data/${model_name}`)
+                          .filter(x => x.endsWith('.dot'))
+                          .map(elem => __dirname + `/data/${model_name}/${elem}`);
+          dotFiles.forEach(x => {
+            let origin = fs.readFileSync(x, 'utf8');
+            let pruned = dotHelper.pruneDot(origin, req.body.simplificationTarget);
+            fs.writeFileSync(x, pruned);
+          });
+        }
         res.send({ files: files }).end();
       }
     });
