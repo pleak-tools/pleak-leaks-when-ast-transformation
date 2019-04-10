@@ -1,4 +1,5 @@
 var rewriter = require('./src/ast_rewriter');
+var dotHelper = require('./src/dot-helper');
 
 var express = require('express');
 var cors = require('cors');
