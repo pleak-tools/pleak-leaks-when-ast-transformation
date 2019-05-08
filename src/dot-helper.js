@@ -50,20 +50,31 @@ module.exports = {
 
     // We take the attribute nodes of the selected table as root nodes for traverse
     // Also we have to traverse subgraphs in subgraphs
-    let traverseSubgraphFunc = (children) => children.filter(x => {
+    let traverseRootSubgraphFunc = (children) => children.filter(x => {
       if (x.type == 'subgraph') {
-        let qwe = x.children.find(y => y.type == 'attr_stmt' && y.attr_list[0].id == 'label');
-        return !!qwe && qwe.attr_list[0].eq == table;
+        let subgraphLabel = x.children.find(y => y.type == 'attr_stmt' && y.attr_list[0].id == 'label');
+        return !!subgraphLabel && subgraphLabel.attr_list[0].eq == table;
       }
       else {
         return false;
       }
     });
 
-    var rootIds = traverseSubgraphFunc(ast[0].children);
+    let traverseSubgraphFunc = (children) => children.filter(x => {
+      return x.type == 'subgraph';
+      // if (x.type == 'subgraph') {
+      //   let qwe = x.children.find(y => y.type == 'attr_stmt' && y.attr_list[0].id == 'label');
+      //   return !!qwe && qwe.attr_list[0].eq == table;
+      // }
+      // else {
+      //   return false;
+      // }
+    });
+
+    var rootIds = traverseRootSubgraphFunc(ast[0].children);
     ast[0].children.forEach(x => {
       if (x.type == 'subgraph') {
-        let innerRoots = traverseSubgraphFunc(x.children);
+        let innerRoots = traverseRootSubgraphFunc(x.children);
         rootIds = rootIds.concat(innerRoots);
       }
     });
@@ -71,6 +82,14 @@ module.exports = {
     let nodeIds = [];
     rootIds.forEach(x => nodeIds = nodeIds.concat(x.children.filter(x => x.type == "node_stmt").map(x => x.node_id.id)));
     idsToKeep = idsToKeep.concat(nodeIds);
+    ast[0].children.forEach(x => {
+      if (x.type == 'subgraph') {
+        idsToKeep.push(x.id);
+        let innerGraphs = traverseSubgraphFunc(x.children);
+        idsToKeep = idsToKeep.concat(innerGraphs.map(y => y.id));
+      }
+    });
+
     var st = nodeIds;
 
     // Collecting all reachable operations up to the 'Filter'
@@ -159,9 +178,68 @@ module.exports = {
           arr.splice(index, 1);
         }
         if (x.type == 'subgraph') {
+          let subgraphFilter = children.filter(y => y.type == 'node_stmt').find(y => !!y.attr_list.find(z => z.id == 'label' && z.eq == 'Filter'));
+          
           pruneList(x.children);
           if (!x.children.filter(y => y.type == 'node_stmt').length) {
-            arr.splice(index, 1);
+            // Writing '...' instead of table attributes, otherwise looks too massive
+            x.children.push({
+              type: 'node_stmt',
+              node_id: {id: 'empty_' + x.id, type: 'node_id'},
+              attr_list: [
+                {eq: 'box', id: 'shape', type: 'attr'},
+                {eq: 'filled,bold', id: 'sdtyle', type: 'attr'},
+                {eq: 'white', id: 'fillcolor', type: 'attr'},
+                {eq: '...', id: 'label', type: 'attr'}
+              ]
+            });
+
+            // Add '...' operation to tell there are some intermediate calculations
+            // but they are displayed only in full leaks-when report
+
+            // Operation
+            let existingOperation = children.filter(y => y.type == 'node_stmt').find(y => !!y.attr_list.find(z => z.id == 'label' && z.eq == '...'));
+            if(!existingOperation){
+              existingOperation = {
+                type: 'node_stmt',
+                node_id: {id: 'operation_' + x.id, type: 'node_id'},
+                attr_list: [
+                  {eq: 'box', id: 'shape', type: 'attr'},
+                  {eq: 'filled,bold', id: 'sdtyle', type: 'attr'},
+                  {eq: 'white', id: 'fillcolor', type: 'attr'},
+                  {eq: '...', id: 'label', type: 'attr'}
+                ]
+              };
+              children.push(existingOperation);
+            }
+
+            // First edge
+            children.push({
+              type: 'edge_stmt',
+              edge_list: [
+                {id: 'empty_' + x.id, type: 'node_id'},
+                {id: existingOperation.node_id.id, type: 'node_id'}
+              ],
+              attr_list: [
+                {eq: 'box', id: 'shape', type: 'attr'},
+                {eq: 'filled,bold', id: 'sdtyle', type: 'attr'},
+                {eq: 'white', id: 'fillcolor', type: 'attr'}
+              ]
+            });
+
+            // Second edge
+            children.push({
+              type: 'edge_stmt',
+              edge_list: [
+                {id: existingOperation.node_id.id, type: 'node_id'},
+                {id: subgraphFilter.node_id.id, type: 'node_id'}
+              ],
+              attr_list: [
+                {eq: 'box', id: 'shape', type: 'attr'},
+                {eq: 'filled,bold', id: 'sdtyle', type: 'attr'},
+                {eq: 'white', id: 'fillcolor', type: 'attr'}
+              ]
+            });
           }
         }
 
