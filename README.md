@@ -2,13 +2,17 @@
 
 ## Requirements
 
-For [pleak-leaks-when-analysis](https://github.com/pleak-tools/pleak-leaks-when-analysis) submodule:
+You need to locate [pleak-backend](https://github.com/pleak-tools/pleak-backend), [pleak-frontend](https://github.com/pleak-tools/pleak-frontend) and [pleak-sql-editor](https://github.com/pleak-tools/pleak-sql-editor) directories all in the same directory. Specify names for the first three modules in the config.json file.
+Read more from sub-repositories how to build each module.
 
-- ocaml (`apt install ocaml`)
+For the SQL leaks-when analysis tool in [pleak-leaks-when-analysis](https://github.com/pleak-tools/pleak-leaks-when-analysis) submodule:
+
+- Z3 Theorem Prover - to install, you can clone it from [https://github.com/Z3Prover/z3](https://github.com/Z3Prover/z3) and compile it yourself or (on some Linux versions, for example Ubuntu) execute `apt install z3`. You will need Z3 to be in the PATH.
 - opam (`apt install opam`)
-- libocamlgraph-ocaml-dev (`apt install libocamlgraph-ocaml-dev` / `opam install ocamlgraph`)
-- libxml-light-ocaml-dev (`apt install libxml-light-ocaml-dev` / `opam install xml-light`)
-- Z3 Theorem Prover - to install, you can clone it from [https://github.com/Z3Prover/z3](https://github.com/Z3Prover/z3) and compile it yourself or (on some Linux versions, for example Ubuntu 16.4) execute `apt install z3`. You will need Z3 to be in the PATH.
+- ocaml (`apt install ocaml`) - version 4.02.0 is needed (`opam switch 4.02.0`)
+- ocamlgraph (`opam install ocamlgraph` / `apt install libocamlgraph-ocaml-dev`)
+- xml-light (`opam install xml-light` / `apt install libxml-light-ocaml-dev`)
+- Yojson (`opam install Yojson`)
 
 Based on environment, you might also need to install:
 
@@ -29,3 +33,12 @@ Serve the wrapper component locally with
 
 ```
 node server.js
+```
+
+## Using
+
+You can use the analyser through [Pleak SQL-privacy editor](https://github.com/pleak-tools/pleak-sql-editor).
+
+## License
+
+MIT
