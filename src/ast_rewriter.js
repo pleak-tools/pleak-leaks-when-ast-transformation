@@ -5,6 +5,13 @@ let PgQuery = require('pg-query-parser');
 //  == DDL statements
 // =========================================================
 // =========================================================
+
+  //ideally, we want to rename "parameters" to some "_dummyTable" that is not used anywhere in the model
+  //however, someone should create a schema for _dummyTable, which is not implemented yet
+  let paramTableName = "parameters";
+  let paramTableDecl = 'RATable "parameters"'
+  let paramTableRegEx = /\"parameters.([^\"]+)\"/g
+
   let dumpColumnType = (column) => {
     let names = column.ColumnDef.typeName.TypeName.names.map( obj => obj.String.str);
   
@@ -68,7 +75,7 @@ let PgQuery = require('pg-query-parser');
 // =========================================================
 // =========================================================
 
-let operMap = {"*": "OPMult",  "<@>": "OPGeoDist", "-": "OPNeg", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
+let operMap = {"*": "OPMult", "^": "OPPow", "<@>": "OPGeoDist", "-": "OPNeg", "+": "OPPlus", "/": "OPDiv", "=": "OPIsEq", "<": "OPLessThan", "<=": "OPLessEqual", ">": "OPGreaterThan", ">=": "OPGreaterEqual" };
 
 let dumpFieldRenaming = (fields, aliases) => {
     let list = [];
@@ -270,9 +277,16 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
         }
 
         if (node.str) {
-            stack.push(node.str);
+            let temp = parseFloat(node.str)
+            if (isNaN(temp)) {
+                stack.push(node.str);
+            } else {
+                stack.push(`RAXoper (OPRealConst ${temp}, [])`);
+            }
         } else if (node.ival || node.ival == 0) {
             stack.push(`RAXoper (OPIntConst ${node.ival}, [])`);
+        } else if (node.fval || node.fval == 0) {
+            stack.push(`RAXoper (OPRealConst ${node.fval}, [])`);
         } else if (node.MinMaxExpr) {
             let local_stack = [];
             traverse(node.MinMaxExpr, local_stack, fdefs, "CoalesceExpr", fields, aliases, projected_fields);
@@ -364,7 +378,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 stack.push(`RAXoper (OPCeiling, [${local_stack.pop()}])`);
             } else if (Object.keys(groupOperationsMapping).includes(local_stack[0])) {
               let operation = local_stack[0];
-              var aggregateTableAlias = Object.keys(aliases).filter(x => x != "parameters")[0];
+              var aggregateTableAlias = Object.keys(aliases).filter(x => x != paramTableName)[0];
               let operand = node.agg_star 
                   ? `"${aggregateTableAlias}.${wildCardAggrFields[aggregateTableAlias]}"`
                   : local_stack.pop();
@@ -399,7 +413,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             if (local_stack.length == 1) {
                 console.log("CONTEXT", context);
                 console.log("field", local_stack);
-                local_stack.unshift("parameters");
+                local_stack.unshift(paramTableName);
             }
             let table_name = local_stack[0], field_name = local_stack[1];
             
@@ -434,7 +448,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
             if (node.CreateFunctionStmt.returnType.TypeName.setof) {
                 var stack1 = [];
                 var fields1 = {};
-                var aliases1 = {"parameters": 'RATable "parameters"'};
+                var aliases1 = {}; aliases1[paramTableName] = paramTableDecl;
                 var projected_fields1 = [];
                 traverse(ast1, stack1, fdefs, "function", fields1, aliases1, projected_fields1);
                 console.log("++++++>", projected_fields1);
@@ -461,7 +475,7 @@ let traverse = function (node, stack, fdefs, context, fields, aliases, projected
                 var expr = stack1.pop();
 
                 console.log("PROCESSING EXPR", expr);
-                expr = expr.replace(/\"parameters.([^\"]+)\"/g, "$1");
+                expr = expr.replace(paramTableRegEx, "$1");
 
                 var parameters =
                     node.CreateFunctionStmt.parameters.map( param => param.FunctionParameter.name ).join(" ");
@@ -589,7 +603,8 @@ let analyzeDML = (ast, targets) => {
     if (dml.length > 0) {
         var stack = [];
         var fdefs = [];
-        traverse(dml, stack, fdefs, "function", {}, {"parameters": 'RATable "parameters"'}, []);
+        var temp = {}; temp[paramTableName] = paramTableDecl;
+        traverse(dml, stack, fdefs, "function", {}, temp, []);
 
         console.log("TARGETS::", targets);
 
