@@ -23,7 +23,7 @@ app.use('/leaks-when/data', express.static(__dirname + '/data'));
 app.post('/adapt-sql', (req, res) => {
 
   let sql_script = req.body.sql_script;
-  targets = [req.body.target];
+  targets = [];
   let policy = []
 
   let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
