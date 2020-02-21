@@ -20,6 +20,27 @@ app.use(cors());
 // Serving dot files as output from data directory
 app.use('/leaks-when/data', express.static(__dirname + '/data'));
 
+app.post('/adapt-sql', (req, res) => {
+
+  let sql_script = req.body.sql_script;
+  targets = [req.body.target];
+  let policy = []
+
+  let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
+  fs.writeFileSync(__dirname + '/../pleak-leaks-when-analysis/src/RAInput.ml', code);
+
+  exec(`../pleak-leaks-when-analysis/src/GrbToGA.native ../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
+    if (err) {
+      console.log(`stderr: ${stderr}`);
+      res.send(400, "Oops ... something wrong").end();
+      return;
+    }
+
+    let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
+    res.send({ clean_sql: clean_sql }).end();
+  });
+});
+
 app.post('/compute', (req, res) => {
   let petriPath = __dirname + '/eventstr-confchecking/bin/target/';
 
