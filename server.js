@@ -27,18 +27,26 @@ app.post('/adapt-sql', (req, res) => {
   let policy = []
 
   let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
-  fs.writeFileSync(__dirname + '/../pleak-leaks-when-analysis/src/RAInput.ml', code);
+  //fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
+  //exec(`/pleak-leaks-when-analysis/src/GrbToGA.native ../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
 
-  exec(`../pleak-leaks-when-analysis/src/GrbToGA.native ../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
+  fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
+  var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
+  var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
+
+  exec(commandBuild, (err, stdout, stderr) => {
+
+   exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
-      res.send(400, "Oops ... something wrong").end();
+      res.send(400, "Failed to run GrbToGa part of the ast-transformer").end();
       return;
     }
 
     let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
     res.send({ clean_sql: clean_sql }).end();
   });
+ });
 });
 
 app.post('/compute', (req, res) => {

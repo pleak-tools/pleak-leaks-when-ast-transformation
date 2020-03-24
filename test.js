@@ -10,7 +10,101 @@ var rimraf = require('rimraf');
 var path = require('path');
 const exec = require('child_process').exec;
 
-  // For testing
+// For testing
+/*
+let sql_script = `
+CREATE TABLE port ( port_id INT8 PRIMARY KEY, name TEXT, latitude INT8, longitude INT8, offloadcapacity INT8, offloadtime INT8, harbordepth INT8, available BOOL);
+CREATE TABLE parameters ( param_id INT8 PRIMARY KEY, deadline INT8, portname TEXT);
+CREATE TABLE ship ( ship_id INT8 PRIMARY KEY, name TEXT, cargo INT8, latitude INT8, longitude INT8, length INT8, draft INT8, max_speed INT8);
+CREATE TABLE berth (
+  berth_id INT8 primary key,
+  port_id INT8);
+CREATE TABLE slot (
+  slot_id INT8 primary key,
+  port_id INT8,
+  berth_id INT8,
+  slotstart INT8,
+  slotend INT8);
+
+select 
+ port.port_id as port_id, 
+  port.name as name, 
+  port.latitude as latitude, 
+  port.longitude as longitude, 
+  port.offloadcapacity as offloadcapacity, 
+  port.offloadtime as offloadtime, 
+  port.harbordepth as harbordepth, 
+  port.available as available
+from port;
+
+create or replace function aggr_count(portname TEXT)
+ returns TABLE(cnt INT8) as
+$$
+select port.name AS name, count(*) as cnt
+from ship, port_enc, port, parameters
+where port_enc.name = parameters.portname
+ 	AND ((ship.latitude - port_enc.latitude) ^ 2 + (ship.longitude - port_enc.longitude) ^ 2) ^ 0.5 / ship.max_speed <= parameters.deadline
+    AND port.name = port_enc.name
+group by port.name
+$$
+language SQL IMMUTABLE returns NULL on NULL INPUT;
+
+select p.name as name, 
+  res.cnt as cnt 
+  into aggr_count_enc 
+  from port_enc as p cross join aggr_count(p.name) as res;
+
+select ac2.name as name,
+       ac2.cnt as cnt 
+from aggr_count_enc as ac2;
+
+create or replace function slots_count(portname TEXT)
+ returns TABLE(slots_number INT8) as
+$$
+select port.name AS portname, count(slot.slot_id) as slots_number
+ from port, slot, berth, parameters
+ where port.name = parameters.portname
+ AND port.port_id = berth.port_id
+ AND slot.port_id = berth.port_id
+ AND slot.berth_id = berth.berth_id 
+ AND slot.slotstart <= parameters.deadline
+ AND slot.slotstart + port.offloadtime <= slot.slotend
+group by port.name
+$$
+language SQL IMMUTABLE returns NULL on NULL INPUT;
+
+select p.name as portname, arr.slots_number as slots_number
+into capacities
+from port as p cross join slots_count(p.name) as arr;
+`;
+
+targets = ['result'];
+*/
+
+
+let sql_script = `
+CREATE TABLE port ( port_id INT8 PRIMARY KEY, name TEXT, latitude INT8, longitude INT8, offloadcapacity INT8, offloadtime INT8, harbordepth INT8, available BOOL);
+CREATE TABLE parameters ( param_id INT8 PRIMARY KEY, deadline INT8, portname TEXT);
+CREATE TABLE ship ( ship_id INT8 PRIMARY KEY, name TEXT, cargo INT8, latitude INT8, longitude INT8, length INT8, draft INT8, max_speed INT8);
+CREATE TABLE result (name TEXT PRIMARY KEY, cnt INT8);
+
+CREATE OR REPLACE FUNCTION aggr_count(portname TEXT) RETURNS TABLE(cnt INT8) AS 
+$$ 
+    SELECT COUNT(ship.ship_id) AS cnt 
+    FROM ship, port, parameters
+    WHERE port.name = parameters.portname AND (POINT(ship.latitude,ship.longitude) <@> POINT(port.latitude,port.longitude)) / ship.max_speed <= parameters.deadline 
+$$ 
+language SQL IMMUTABLE returns NULL on NULL INPUT; 
+
+SELECT port.port_id AS name, MAX(res.cnt) AS cnt
+INTO result
+FROM port CROSS JOIN aggr_count(port.name) AS res
+GROUP BY port.port_id;
+`;
+targets = ['result'];
+
+
+/*
 let sql_script = `
 CREATE TABLE port_1 ( port_id INT8 PRIMARY KEY, name TEXT, latitude INT8, longitude INT8, offloadcapacity INT8, offloadtime INT8, harbordepth INT8, available BOOL);
 CREATE TABLE port_2 ( port_id INT8 PRIMARY KEY, name TEXT, latitude INT8, longitude INT8, offloadcapacity INT8, offloadtime INT8, harbordepth INT8, available BOOL);
@@ -36,9 +130,48 @@ CREATE OR REPLACE FUNCTION slots_count(portname TEXT) RETURNS TABLE(slots_number
 
 SELECT p.name AS portname, res.slots_number AS slots_number INTO capacities_1 FROM port_1 AS p CROSS JOIN slots_count(p.name) AS res;
 `;
+*/
 
-targets = ['capacities_1'];
+/*
+let sql_script = `
+create table ship (
+  ship_id INT8 primary key,
+  name TEXT,
+  latitude INT8,
+  longitude INT8,
+  cargo INT8,
+  max_speed INT8
+);
+
+
+SELECT
+    SUM (ship.latitude) AS tmp
+INTO capacities_1
+FROM
+    ship AS ship
+;
+`;
+
+targets = ['result'];
+*/
+
 let policy = []
 
 let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
-fs.writeFileSync(__dirname + '/../pleak-leaks-when-analysis/src/RAInput.ml', code);
+fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
+var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/clean.sql `;
+var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
+
+  exec(commandBuild, (err, stdout, stderr) => {
+
+   exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
+    if (err) {
+      console.log(`stderr: ${stderr}`);
+      return;
+    }
+
+    let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/clean.sql', 'utf8');
+    console.log(`good!`);
+  });
+});
+
