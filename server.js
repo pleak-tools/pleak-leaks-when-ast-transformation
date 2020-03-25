@@ -40,16 +40,23 @@ app.post('/adapt-sql', (req, res) => {
   var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
 
   exec(commandBuild, { cwd: __dirname }, (err, stdout, stderr) => {
+
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
       return;
+    } else {
+      console.log(`stdout: ${stdout}`);
     }
+
    exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
+
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
       return;
+    } else {
+      console.log(`stdout: ${stdout}`);
     }
 
     let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');

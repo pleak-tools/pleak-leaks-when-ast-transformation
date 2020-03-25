@@ -248,14 +248,17 @@ var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
     if (err) {
       console.log(`stderr: ${stderr}`);
       return;
+    } else {
+      console.log(`stdout: ${stdout}`);
     }
    exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       return;
+    } else {
+      console.log(`stdout: ${stdout}`);
     }
 
-    let clean_sql = fs.readFileSync('../pleak-sql-analysis/banach/lightweight-examples/ships/clean.sql', 'utf8');
     console.log(`good!`);
   });
 });
