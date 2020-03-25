@@ -38,8 +38,10 @@ let PgQuery = require('pg-query-parser');
     
       if (!!extra)
         return `RLSet.singleton "${key.ColumnDef.colname}"; RLSet.singleton "${extra.ColumnDef.colname}"`
-      else
+      else if (key)
         return `RLSet.singleton "${key.ColumnDef.colname}"`;
+      else
+        return ``;
     }
   };
  

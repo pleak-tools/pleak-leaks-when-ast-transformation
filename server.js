@@ -23,20 +23,22 @@ app.use('/leaks-when/data', express.static(__dirname + '/data'));
 app.post('/adapt-sql', (req, res) => {
 
   let sql_script = req.body.sql_script;
-  targets = [];
-  if (req.body.targets) {
-    console.log(req.body.targets);
-    targets = req.body.targets.split(',').map(x => x.replace('\n', ''));
+  let sql_schema = req.body.sql_schema;
+  let targets = [];
+  if (req.body.target) {
+    console.log(req.body.target);
+    targets = [req.body.target];
   }
 
   let policy = []
 
-  let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
+  let code = rewriter.analyzeLeaksWhen(sql_schema + '\n' + sql_script, policy, targets);
   //fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
   //exec(`/pleak-leaks-when-analysis/src/GrbToGA.native ../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
 
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
-  var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
+  //var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
+  var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /` + req.body.diagram_id + `_clean.sql `;
   var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
 
   exec(commandBuild, { cwd: __dirname }, (err, stdout, stderr) => {
@@ -44,6 +46,8 @@ app.post('/adapt-sql', (req, res) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
+      let clean_sql = sql_script;
+      res.send({ clean_sql: clean_sql }).end();
       return;
     } else {
       console.log(`stdout: ${stdout}`);
@@ -54,12 +58,15 @@ app.post('/adapt-sql', (req, res) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
+      let clean_sql = sql_script;
+      res.send({ clean_sql: clean_sql }).end();
       return;
     } else {
       console.log(`stdout: ${stdout}`);
     }
 
-    let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
+    //--let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
+    let clean_sql = fs.readFileSync(__dirname + '/' + req.body.diagram_id + '_clean.sql', 'utf8');
     res.send({ clean_sql: clean_sql }).end();
   });
  });
