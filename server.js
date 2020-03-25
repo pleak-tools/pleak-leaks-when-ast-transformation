@@ -45,7 +45,7 @@ app.post('/adapt-sql', (req, res) => {
 
     if (err) {
       console.log(`stderr: ${stderr}`);
-      res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
+      //res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
       let clean_sql = sql_script;
       res.send({ clean_sql: clean_sql }).end();
       return;
@@ -57,7 +57,7 @@ app.post('/adapt-sql', (req, res) => {
 
     if (err) {
       console.log(`stderr: ${stderr}`);
-      res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
+      //res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
       let clean_sql = sql_script;
       res.send({ clean_sql: clean_sql }).end();
       return;
