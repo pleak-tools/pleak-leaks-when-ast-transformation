@@ -25,7 +25,31 @@ CREATE TABLE slot (
   berth_id INT8,
   slotstart INT8,
   slotend INT8);
+*/
+/*
+ intermediate tables
+ ast-transformer does not like tables without primary keys
 
+CREATE TABLE port_enc (
+ port_id INT8 primary key, 
+ name TEXT, 
+ latitude INT8, 
+ longitude INT8, 
+ offloadcapacity INT8, 
+ offloadtime INT8, 
+ harbordepth INT8, 
+ available Bool);
+CREATE TABLE aggr_count_enc (
+ name TEXT, cnt INT8);
+CREATE TABLE aggr_count (
+ name TEXT, cnt INT8);
+CREATE TABLE capacities (
+ portname TEXT,
+ slots_number INT8);
+CREATE TABLE ship_count (
+num_of_ships INT8);
+*/
+/*
 select 
  port.port_id as port_id, 
   port.name as name, 
@@ -35,6 +59,7 @@ select
   port.offloadtime as offloadtime, 
   port.harbordepth as harbordepth, 
   port.available as available
+into port_enc
 from port;
 
 create or replace function aggr_count(portname TEXT)
@@ -55,7 +80,8 @@ select p.name as name,
   from port_enc as p cross join aggr_count(p.name) as res;
 
 select ac2.name as name,
-       ac2.cnt as cnt 
+       ac2.cnt as cnt
+into aggr_count
 from aggr_count_enc as ac2;
 
 create or replace function slots_count(portname TEXT)
@@ -76,12 +102,68 @@ language SQL IMMUTABLE returns NULL on NULL INPUT;
 select p.name as portname, arr.slots_number as slots_number
 into capacities
 from port as p cross join slots_count(p.name) as arr;
+
+SELECT
+   ac.name as name,
+   greatest(ac.cnt, cp.slots_number) as num_of_ships
+into ship_count_temp
+from aggr_count AS ac, capacities AS cp, parameters
+ where ac.name = cp.portname
+ and ac.name = parameters.portname
+;
+
+SELECT
+   sct.name as name,
+   MAX(sct.num_of_ships) as num_of_ships
+into ship_count
+from ship_count_temp as sct, port
+ where sct.name = port.name
+ group by port.name
+;
 `;
 
-targets = ['result'];
+targets = ['ship_count'];
 */
 
+let sql_script = `
+create table ship ( 
+  ship_id INT8 primary key, 
+  name TEXT, 
+  cargo INT8, 
+  latitude INT8, 
+  longitude INT8, 
+  length INT8, 
+  draft INT8, 
+  max_speed INT8 
+); 
+create table port 
+(  
+  port_id INT8 primary key,  
+  name TEXT,  
+  latitude INT8,  
+  longitude INT8,  
+  offloadcapacity INT8,  
+  offloadtime INT8,  
+  harbordepth INT8,  
+  available Bool); 
+CREATE TABLE parameters ( param_id INT8 PRIMARY KEY, deadline INT8, portname TEXT); 
+CREATE OR REPLACE FUNCTION aggr_count(portname TEXT) RETURNS TABLE(cnt INT8) AS  
+$$  
+    SELECT COUNT(ship.ship_id) AS cnt  
+    FROM ship, port, parameters 
+    WHERE port.name = parameters.portname AND (POINT(ship.latitude,ship.longitude) <@> POINT(port.latitude,port.longitude)) / ship.max_speed <= parameters.deadline  
+$$  
+language SQL IMMUTABLE returns NULL on NULL INPUT;  
+ 
+SELECT port.port_id AS name, MAX(res.cnt) AS cnt 
+INTO result 
+FROM port CROSS JOIN aggr_count(port.name) AS res 
+GROUP BY port.port_id;
 
+`;
+targets = ['result'];
+
+/*
 let sql_script = `
 CREATE TABLE port ( port_id INT8 PRIMARY KEY, name TEXT, latitude INT8, longitude INT8, offloadcapacity INT8, offloadtime INT8, harbordepth INT8, available BOOL);
 CREATE TABLE parameters ( param_id INT8 PRIMARY KEY, deadline INT8, portname TEXT);
@@ -102,7 +184,7 @@ FROM port CROSS JOIN aggr_count(port.name) AS res
 GROUP BY port.port_id;
 `;
 targets = ['result'];
-
+*/
 
 /*
 let sql_script = `
@@ -159,18 +241,21 @@ let policy = []
 
 let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
 fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
-var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/clean.sql `;
+var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../pleak-sql-analysis/banach/lightweight-examples/ships/clean.sql `;
 var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
 
   exec(commandBuild, (err, stdout, stderr) => {
-
+    if (err) {
+      console.log(`stderr: ${stderr}`);
+      return;
+    }
    exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
       return;
     }
 
-    let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/clean.sql', 'utf8');
+    let clean_sql = fs.readFileSync('../pleak-sql-analysis/banach/lightweight-examples/ships/clean.sql', 'utf8');
     console.log(`good!`);
   });
 });
