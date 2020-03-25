@@ -24,6 +24,11 @@ app.post('/adapt-sql', (req, res) => {
 
   let sql_script = req.body.sql_script;
   targets = [];
+  if (req.body.targets) {
+    console.log(req.body.targets);
+    targets = req.body.targets.split(',').map(x => x.replace('\n', ''));
+  }
+
   let policy = []
 
   let code = rewriter.analyzeLeaksWhen(sql_script, policy, targets);
@@ -34,12 +39,16 @@ app.post('/adapt-sql', (req, res) => {
   var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
   var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
 
-  exec(commandBuild, (err, stdout, stderr) => {
-
+  exec(commandBuild, { cwd: __dirname }, (err, stdout, stderr) => {
+    if (err) {
+      console.log(`stderr: ${stderr}`);
+      res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
+      return;
+    }
    exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) {
       console.log(`stderr: ${stderr}`);
-      res.send(400, "Failed to run GrbToGa part of the ast-transformer").end();
+      res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
       return;
     }
 
