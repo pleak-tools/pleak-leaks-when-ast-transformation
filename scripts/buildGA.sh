@@ -11,3 +11,4 @@ else
     echo "We have succesfully obtained $1/GrbtoGA.native"
 fi
 wait
+exit $retVal

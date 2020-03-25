@@ -13,4 +13,4 @@ if [ $retVal -ne 0 ]; then
 else
     echo "We have succesfully finished running $1/GrbtoGA.native"
 fi
-
+exit $retVal
