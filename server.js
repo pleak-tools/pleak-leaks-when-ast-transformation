@@ -47,8 +47,9 @@ app.post('/adapt-sql', (req, res) => {
       console.log(`stdout: ${stdout}`);
       console.log(`stderr: ${stderr}`);
       //res.send(400, "Failed to parse the intermediate file created by the ast-transformer.").end();
+      let errorMessage = 'stdout: ' + stdout + '\nstderr: ' + stderr;
       let clean_sql = sql_script;
-      res.send({ clean_sql: clean_sql }).end();
+      res.send({ errorMessage: errorMessage, clean_sql: clean_sql }).end();
       return;
     } else {
       console.log(`stdout: ${stdout}`);
@@ -60,8 +61,9 @@ app.post('/adapt-sql', (req, res) => {
       console.log(`stdout: ${stdout}`);
       console.log(`stderr: ${stderr}`);
       //res.send(400, "Failed to run GrbToGa part of the ast-transformer.").end();
+      let errorMessage = 'stdout: ' + stdout + '\nstderr: ' + stderr;
       let clean_sql = sql_script;
-      res.send({ clean_sql: clean_sql }).end();
+      res.send({ errorMessage: errorMessage, clean_sql: clean_sql }).end();
       return;
     } else {
       console.log(`stdout: ${stdout}`);
@@ -69,7 +71,8 @@ app.post('/adapt-sql', (req, res) => {
 
     //--let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
     let clean_sql = fs.readFileSync(__dirname + '/' + req.body.diagram_id + '_clean.sql', 'utf8');
-    res.send({ clean_sql: clean_sql }).end();
+    let errorMessage = 'good!';
+    res.send({ errorMessage: errorMessage, clean_sql: clean_sql }).end();
   });
  });
 });
