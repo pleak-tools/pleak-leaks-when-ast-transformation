@@ -34,10 +34,10 @@ app.post('/adapt-sql', (req, res) => {
 
   let code = rewriter.analyzeLeaksWhen(sql_schema + '\n' + sql_script, policy, targets);
   //fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
-  //exec(`/pleak-leaks-when-analysis/src/GrbToGA.native ../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
+  //exec(`/pleak-leaks-when-analysis/src/GrbToGA.native ../pleak-sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `, { cwd: __dirname }, (err, stdout, stderr) => {
 
   fs.writeFileSync(__dirname + '/pleak-leaks-when-analysis/src/RAInput.ml', code);
-  //var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
+  //var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /../pleak-sql-constraint-propagation/src/psql/` + req.body.diagram_id + `.sql `;
   var command = __dirname + `/scripts/scriptGA.sh ` + __dirname + ` /` + req.body.diagram_id + `_clean.sql `;
   var commandBuild = __dirname + `/scripts/buildGA.sh ` + __dirname;
 
@@ -69,7 +69,7 @@ app.post('/adapt-sql', (req, res) => {
       console.log(`stdout: ${stdout}`);
     }
 
-    //--let clean_sql = fs.readFileSync('../sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
+    //--let clean_sql = fs.readFileSync('../pleak-sql-constraint-propagation/src/psql/' + req.body.diagram_id + '.sql', 'utf8');
     let clean_sql = fs.readFileSync(__dirname + '/' + req.body.diagram_id + '_clean.sql', 'utf8');
     let errorMessage = 'good!';
     res.send({ errorMessage: errorMessage, clean_sql: clean_sql }).end();
