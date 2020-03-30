@@ -23,7 +23,7 @@ Based on environment, you might also need to install:
 
 To build the wrapper component you need: [NodeJS](http://nodejs.org) with [npm](https://npmjs.org) installed.
 
-To install all project dependencies git clone with `--recurse-submodules` flag and execute
+To install the SQL leaks-when analyzer, git clone this repository with `--recurse-submodules` flag and execute
 
 ```
 npm install
