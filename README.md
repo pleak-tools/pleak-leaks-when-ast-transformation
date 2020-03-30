@@ -2,7 +2,7 @@
 
 ## Requirements
 
-You need to locate [pleak-backend](https://github.com/pleak-tools/pleak-backend), [pleak-frontend](https://github.com/pleak-tools/pleak-frontend) and [pleak-sql-editor](https://github.com/pleak-tools/pleak-sql-editor) directories all in the same directory. Specify names for the first three modules in the config.json file.
+You need to locate pleak-leaks-when-ast-transformation, [pleak-backend](https://github.com/pleak-tools/pleak-backend), [pleak-frontend](https://github.com/pleak-tools/pleak-frontend) and [pleak-pe-bpmn-editor](https://github.com/pleak-tools/pleak-pe-bpmn-editor) directories all in the same directory. Specify names for the first three modules in the config.json file.
 Read more from sub-repositories how to build each module.
 
 For the SQL leaks-when analysis tool in [pleak-leaks-when-analysis](https://github.com/pleak-tools/pleak-leaks-when-analysis) submodule:
@@ -37,7 +37,7 @@ node server.js
 
 ## Using
 
-You can use the analyser through [Pleak SQL-privacy editor](https://github.com/pleak-tools/pleak-sql-editor).
+You can use the analyser through [Pleak PE-BPMN & Leaks-When editor](https://github.com/pleak-tools/pleak-pe-bpmn-editor).
 
 ## License
 
