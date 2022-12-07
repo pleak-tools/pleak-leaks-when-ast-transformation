@@ -11,7 +11,7 @@
   "dependencies": {
     "cors": "^2.8.4",
     "dotparser": "^0.4.0",
-    "express": "^4.16.2",
+    "express": "^4.17.3",
     "pg-query-deparse": "^1.0.0",
     "pg-query-parser": "^0.2.4",
     "rimraf": "2.6.2"
